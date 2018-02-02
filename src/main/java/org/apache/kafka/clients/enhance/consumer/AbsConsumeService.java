@@ -233,6 +233,8 @@ public abstract class AbsConsumeService<K> implements ConsumeService<K> {
                 pollService.setSuspend(false);
                 safeConsumer.seek(partition, offset);
                 partitionDataManager.resetPartitionData(partition);
+            } catch (Exception ex) {
+                logger.warn("seek offset error. due to ", ex);
             } finally {
                 pollService.setSuspend(true);
                 syncLock.unlock();
@@ -260,6 +262,8 @@ public abstract class AbsConsumeService<K> implements ConsumeService<K> {
                 }
                 partitionDataManager.resetAllPartitionData();
 
+            } catch (Exception ex) {
+                logger.warn("seekToTime error. due to ", ex);
             } finally {
                 pollService.setSuspend(true);
                 syncLock.unlock();
@@ -277,6 +281,8 @@ public abstract class AbsConsumeService<K> implements ConsumeService<K> {
                 pollService.setSuspend(false);
                 safeConsumer.seekToBeginning(safeConsumer.assignment());
                 partitionDataManager.resetAllPartitionData();
+            } catch (Exception ex) {
+                logger.warn("seekToBeginning error. due to ", ex);
             } finally {
                 pollService.setSuspend(true);
                 syncLock.unlock();
@@ -294,6 +300,8 @@ public abstract class AbsConsumeService<K> implements ConsumeService<K> {
                 pollService.setSuspend(false);
                 safeConsumer.seekToEnd(safeConsumer.assignment());
                 partitionDataManager.resetAllPartitionData();
+            } catch (Exception ex) {
+                logger.warn("seekToEnd error. due to ", ex);
             } finally {
                 pollService.setSuspend(true);
                 syncLock.unlock();

@@ -78,6 +78,11 @@ public class ConcurrentConsumeService<K> extends AbsConsumeService<K> {
             ExtMessageUtils.setPartion(msg, Integer.parseInt(msg.getProperty(PROPERTY_REAL_PARTITION_ID)));
             ExtMessageUtils.setOffset(msg, Integer.parseInt(msg.getProperty(PROPERTY_REAL_OFFSET)));
             ExtMessageUtils.setStoreTimeMs(msg, Long.parseLong(msg.getProperty(PROPERTY_REAL_STORE_TIME)));
+
+            msg.removeProperty(PROPERTY_REAL_TOPIC);
+            msg.removeProperty(PROPERTY_REAL_PARTITION_ID);
+            msg.removeProperty(PROPERTY_REAL_OFFSET);
+            msg.removeProperty(PROPERTY_REAL_STORE_TIME);
         }
     }
 }
