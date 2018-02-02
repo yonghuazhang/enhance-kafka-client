@@ -9,6 +9,7 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.Properties;
 
+import static org.apache.kafka.clients.enhance.ExtMessageDef.MAX_RECONSUME_COUNT;
 import static org.apache.kafka.clients.enhance.ExtMessageDef.joinTagsOrKeys;
 import static org.apache.kafka.clients.enhance.ExtMessageDef.splitTagsOrKeys;
 import static org.apache.kafka.clients.enhance.ExtMessageDef.validateTagOrKey;
@@ -23,29 +24,20 @@ public class ExtMessage<K> {
     private K mesgKey;
     private int partition;
     private long offset;
-    private long logAppendTimeMs;
-    private long startConsumingTimeMs;
+    private long storeTimeMs;
 
     //the below properties will be persisted in record.
-    private int retryTimes;
+    private int retryCount;
     private int delayedLevel;
     private byte[] body;
     private final Map<String, String> properties = new HashMap<>();
 
-    public long getLogAppendTimeMs() {
-        return logAppendTimeMs;
+    public long getStoreTimeMs() {
+        return storeTimeMs;
     }
 
-    void setLogAppendTimeMs(long logAppendTimeMs) {
-        this.logAppendTimeMs = logAppendTimeMs;
-    }
-
-    public long getStartConsumingTimeMs() {
-        return startConsumingTimeMs;
-    }
-
-    void setStartConsumingTimeMs(long lastConsumingTimestamp) {
-        this.startConsumingTimeMs = lastConsumingTimestamp;
+    void setStoreTimeMs(long storeTimeMs) {
+        this.storeTimeMs = storeTimeMs;
     }
 
     void setPartion(int partition) {
@@ -88,8 +80,11 @@ public class ExtMessage<K> {
 
     private boolean isValidHeaders(String hName, String hValue) {
         if (hName == null || hName.isEmpty() ||
-                hValue == null || hValue.isEmpty())
+                hValue == null || hValue.isEmpty()) {
+            log.warn("Invalid message header, key = [{}], val = [{}].", hName, hValue);
             return false;
+        }
+
         if (this.properties.size() > Short.MAX_VALUE) {
             log.warn("Don't support too much properties for single message, the num of perporties le {}.", Short.MAX_VALUE);
             return false;
@@ -97,7 +92,7 @@ public class ExtMessage<K> {
         return true;
     }
 
-    void removeProperty(final String name) {
+    public void removeProperty(final String name) {
         this.properties.remove(name);
     }
 
@@ -149,7 +144,7 @@ public class ExtMessage<K> {
         return this.delayedLevel;
     }
 
-    public void setDelayedLevel(int level) {
+    void setDelayedLevel(int level) {
         if (level <= 0) {
             this.delayedLevel = 0;
         } else if (level > ExtMessageDef.MAX_DELAY_TIME_LEVEL) {
@@ -159,25 +154,34 @@ public class ExtMessage<K> {
         }
     }
 
-    public int getRetryTimes() {
-        return retryTimes;
+    public int getRetryCount() {
+        return retryCount;
     }
 
-    public void setRetryTimes(int retryTimes) {
-        if (retryTimes < 0) {
-            this.retryTimes = 0;
-        } else if (retryTimes > ExtMessageDef.MAX_RECONSUME_TIMES) {
-            this.retryTimes = ExtMessageDef.MAX_RECONSUME_TIMES;
-        } else {
-            this.retryTimes = retryTimes;
+    void updateRetryCount() {
+        if (retryCount < 0) {
+            retryCount = 0;
+        }
+        retryCount++;
+        if (retryCount > MAX_RECONSUME_COUNT) {
+            retryCount = MAX_RECONSUME_COUNT;
         }
     }
 
-    public ExtMessage<K> updateByRecord(ConsumerRecord<K, ExtMessage<K>> record) {
+    void setRetryCount(int retryCount) {
+        if (retryCount < 0) {
+            this.retryCount = 0;
+        } else if (retryCount > MAX_RECONSUME_COUNT) {
+            this.retryCount = MAX_RECONSUME_COUNT;
+        } else
+            this.retryCount = retryCount;
+    }
+
+    ExtMessage<K> updateByRecord(ConsumerRecord<K, ExtMessage<K>> record) {
         this.mesgKey = record.key();
         this.offset = record.offset();
         this.partition = record.partition();
-        this.logAppendTimeMs = record.timestamp();
+        this.storeTimeMs = record.timestamp();
         return this;
     }
 
@@ -185,7 +189,7 @@ public class ExtMessage<K> {
         return topic;
     }
 
-    public void setTopic(String topic) {
+    void setTopic(String topic) {
         this.topic = topic;
     }
 
