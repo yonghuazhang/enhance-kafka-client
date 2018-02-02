@@ -28,14 +28,14 @@ import java.util.concurrent.ThreadPoolExecutor;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.locks.ReentrantLock;
 
-public class AbsConsumeService<K> implements ConsumeService<K> {
+public abstract class AbsConsumeService<K> implements ConsumeService<K> {
     protected static final Logger logger = LoggerFactory.getLogger(AbsConsumeService.class);
-    private static final long SEND_MESSAGE_BACK_WAIT_TIMEOUT_MS = 3000L;
+    protected static final long SEND_MESSAGE_BACK_WAIT_TIMEOUT_MS = 3000L;
 
     private final ThreadPoolExecutor execTaskService;
     private final ArrayBlockingQueue<Runnable> taskQueue;
     private final ScheduledExecutorService scheduleExecTaskService;
-    private final ClientThreadFactory clientThreadFactory = new ClientThreadFactory("consume-service-threadpool");
+    protected final ClientThreadFactory clientThreadFactory = new ClientThreadFactory("consume-service-threadpool");
     protected final KafkaPollMessageService<K> pollService;
     protected final ConsumeDispatchMessageService dispatchService;
 
@@ -102,7 +102,7 @@ public class AbsConsumeService<K> implements ConsumeService<K> {
                         for (ConsumerRecord<K, ExtMessage<K>> record : records) {
                             messages.add(record.value());
                         }
-                        ConsumeTaskRequest<K> requestTask = new ConsumeTaskRequest<>(AbsConsumeService.this, clientContext.messageHandler(), partitionDataManager,
+                        AbsConsumeTaskRequest<K> requestTask = new AbsConsumeTaskRequest<>(AbsConsumeService.this, clientContext.messageHandler(), partitionDataManager,
                                 messages, topicPartition, clientContext);
                         logger.debug("dispatch consuming task at once. ===>" + messages);
                         submitConsumeRequest(requestTask);
@@ -201,7 +201,7 @@ public class AbsConsumeService<K> implements ConsumeService<K> {
     }
 
     @Override
-    public void submitConsumeRequest(ConsumeTaskRequest<K> requestTask) {
+    public void submitConsumeRequest(AbsConsumeTaskRequest<K> requestTask) {
         try {
             dispatchTaskAtOnce(requestTask);
         } catch (RejectedExecutionException e) {
@@ -308,7 +308,7 @@ public class AbsConsumeService<K> implements ConsumeService<K> {
         return offsetPersistor;
     }
 
-    public void dispatchTaskLater(final ConsumeTaskRequest<K> requestTask, final long timeout, final TimeUnit unit) {
+    public void dispatchTaskLater(final AbsConsumeTaskRequest<K> requestTask, final long timeout, final TimeUnit unit) {
         try {
             scheduleExecTaskService.schedule(new Runnable() {
                 @Override
@@ -332,7 +332,7 @@ public class AbsConsumeService<K> implements ConsumeService<K> {
     }
 
     //maybe throw RejectedExecutionException
-    public Future<ConsumeTaskResponse> dispatchTaskAtOnce(ConsumeTaskRequest<K> requestTask) {
+    public Future<ConsumeTaskResponse> dispatchTaskAtOnce(AbsConsumeTaskRequest<K> requestTask) {
         Future<ConsumeTaskResponse> responseFuture = null;
         if (null != requestTask) {
             responseFuture = execTaskService.submit(requestTask);
