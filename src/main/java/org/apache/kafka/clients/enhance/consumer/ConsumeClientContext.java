@@ -1,7 +1,7 @@
 package org.apache.kafka.clients.enhance.consumer;
 
 import org.apache.kafka.clients.consumer.ConsumerConfig;
-import org.apache.kafka.clients.enhance.ExtMessageFilter;
+import org.apache.kafka.clients.enhance.AbsExtMessageFilter;
 import org.apache.kafka.clients.enhance.Utility;
 import org.apache.kafka.clients.enhance.consumer.listener.ConcurrentMessageHandler;
 import org.apache.kafka.clients.enhance.consumer.listener.ConsumeMessageHook;
@@ -9,7 +9,6 @@ import org.apache.kafka.clients.enhance.consumer.listener.ConsumeMessageHooks;
 import org.apache.kafka.clients.enhance.consumer.listener.MessageHandler;
 import org.apache.kafka.clients.enhance.consumer.listener.OrdinalMessageHandler;
 import org.apache.kafka.clients.enhance.exception.KafkaConsumeException;
-import org.apache.kafka.clients.producer.KafkaProducer;
 import org.apache.kafka.clients.producer.ProducerConfig;
 import org.apache.kafka.common.serialization.Deserializer;
 import org.apache.kafka.common.serialization.Serializer;
@@ -51,7 +50,7 @@ public final class ConsumeClientContext<K> {
     private int consumeQueueSize = consumeCoreThreadNum * 256;
     private int consumeRequestTimeoutMs = INVALID_PROPERTY_VALUE;
     private Set<String> subTopics = Collections.synchronizedSet(new HashSet<String>());
-    private volatile ExtMessageFilter<K> messageFilter;
+    private volatile AbsExtMessageFilter<K> messageFilter;
     private volatile MessageHandler<K, ?> messageHandler;
     private final ConsumeMessageHooks<K> consumeHooks = new ConsumeMessageHooks<>();
     private Deserializer<K> keyDeserializer = null;
@@ -192,11 +191,18 @@ public final class ConsumeClientContext<K> {
 
         for (String key : originalConfig.keySet()) {
             try {
+                int i = 0;
                 if (consumerKeys.contains(key)) {
                     innerConsumeConfig.put(key, String.valueOf(originalConfig.get(key)));
-                } else if (producerKeys.contains(key)) {
+                    i++;
+                }
+
+                if (producerKeys.contains(key)) {
                     innerProducerConfig.put(key, String.valueOf(originalConfig.get(key)));
-                } else {
+                    i++;
+                }
+
+                if (0 == i){
                     logger.info("Invalid property: key = [{}], value = [{}].", key, originalConfig.get(key));
                 }
             } catch (Exception ex) {
@@ -302,12 +308,12 @@ public final class ConsumeClientContext<K> {
         return this.consumeType;
     }
 
-    public ConsumeClientContext messageFilter(ExtMessageFilter<K> messageFilter) {
+    public ConsumeClientContext messageFilter(AbsExtMessageFilter<K> messageFilter) {
         this.messageFilter = messageFilter;
         return this;
     }
 
-    public ExtMessageFilter<K> messageFilter() {
+    public AbsExtMessageFilter<K> messageFilter() {
         return messageFilter;
     }
 

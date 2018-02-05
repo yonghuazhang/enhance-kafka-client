@@ -1,9 +1,17 @@
 package org.apache.kafka.clients.enhance.consumer;
 
+import org.apache.kafka.clients.consumer.ConsumerRecord;
 import org.apache.kafka.clients.enhance.ExtMessage;
 import org.apache.kafka.clients.enhance.ExtMessageDef;
 import org.apache.kafka.clients.enhance.ExtMessageUtils;
+import org.apache.kafka.clients.enhance.ShutdownableThread;
+import org.apache.kafka.clients.enhance.consumer.listener.ConcurrentMessageHandler;
 import org.apache.kafka.clients.producer.KafkaProducer;
+import org.apache.kafka.common.TopicPartition;
+
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Set;
 
 import static org.apache.kafka.clients.enhance.ExtMessageDef.PROPERTY_REAL_OFFSET;
 import static org.apache.kafka.clients.enhance.ExtMessageDef.PROPERTY_REAL_PARTITION_ID;
@@ -21,13 +29,43 @@ public class ConcurrentConsumeService<K> extends AbsConsumeService<K> {
 
     public ConcurrentConsumeService(ConsumerWithAdmin<K> safeConsumer, KafkaProducer<K, ExtMessage<K>> innerSender, ConsumeClientContext<K> clientContext) {
         super(safeConsumer, innerSender, clientContext);
+        this.dispatchService = new ConcurrentDispatchMessageService("concurrent-dispatch-message-service-thread");
         createRetryTopic();
 
     }
 
+
+    public class ConcurrentDispatchMessageService extends ShutdownableThread {
+
+        public ConcurrentDispatchMessageService(String name) {
+            super(name);
+        }
+
+        @Override
+        public void doWork() {
+            while (isRunning) {
+                Set<TopicPartition> topicPartitions = partitionDataManager.getAssignedPartition();
+                for (TopicPartition topicPartition : topicPartitions) {
+                    List<ConsumerRecord<K, ExtMessage<K>>> records =
+                            partitionDataManager.retrieveTaskRecords(topicPartition, clientContext.consumeBatchSize());
+                    if (!records.isEmpty()) {
+                        List<ExtMessage<K>> messages = new ArrayList<>(records.size());
+                        for (ConsumerRecord<K, ExtMessage<K>> record : records) {
+                            messages.add(record.value());
+                        }
+                        AbsConsumeTaskRequest<K> requestTask = new ConcurrentConsumeTaskRequest<K>(ConcurrentConsumeService.this, partitionDataManager,
+                                messages, topicPartition, clientContext, (ConcurrentMessageHandler<K>)clientContext.messageHandler());
+                        logger.debug("dispatch consuming task at once. ===>" + messages);
+                        submitConsumeRequest(requestTask);
+                    }
+                }
+            }
+        }
+    }
+
     @Override
     public void start() {
-
+        super.start();
     }
 
 

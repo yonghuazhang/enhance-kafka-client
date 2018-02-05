@@ -22,6 +22,7 @@ import org.apache.kafka.clients.enhance.AdminOperator;
 import org.apache.kafka.clients.enhance.ClusterDescription;
 import org.apache.kafka.clients.enhance.ExtMessage;
 import org.apache.kafka.clients.enhance.ExtMessageEncoder;
+import org.apache.kafka.clients.enhance.ExtMessageUtils;
 import org.apache.kafka.clients.enhance.exception.KafkaAdminException;
 import org.apache.kafka.common.Node;
 import org.apache.kafka.common.PartitionInfo;
@@ -73,9 +74,6 @@ class ConsumerWithAdmin<K> extends KafkaConsumer<K, ExtMessage<K>> implements Ad
     }
 
     private void initAdminClient() {
-        Properties adminProp = new Properties();
-        adminProp.put(CommonClientConfigs.BOOTSTRAP_SERVERS_CONFIG,
-                this.getConsumerConfig().getString(CommonClientConfigs.BOOTSTRAP_SERVERS_CONFIG));
         adminClient = KafkaAdminClient.create(this.getConsumerConfig().originals());
     }
 
@@ -323,7 +321,7 @@ class ConsumerWithAdmin<K> extends KafkaConsumer<K, ExtMessage<K>> implements Ad
             RetrieveRecordsResult<K, ExtMessage<K>> result = adminClient.retrieveMessagesByOffset(tp, offset, 1, this.keyDeserializer, this.valueDeserializer, options);
             for (ConsumerRecord<K, ExtMessage<K>> record : result.values().get()) {
                 message = record.value();
-                message.updateByRecord(record);
+                ExtMessageUtils.updateByRecord(record.value(), record);
             }
 
         } catch (Exception e) {
@@ -344,7 +342,7 @@ class ConsumerWithAdmin<K> extends KafkaConsumer<K, ExtMessage<K>> implements Ad
             options.timeoutMs((int) this.requestTimeoutMs);
             RetrieveRecordsResult<K, ExtMessage<K>> result = adminClient.retrieveMessagesByTimeSpan(tp, bTimestamp, size, this.keyDeserializer, this.valueDeserializer, options);
             for (ConsumerRecord<K, ExtMessage<K>> record : result.values().get()) {
-                messages.add(record.value().updateByRecord(record));
+                messages.add(ExtMessageUtils.updateByRecord(record.value(), record));
             }
         } catch (Exception e) {
             log.error("queryMessages for TopicPartition [{}] failed, caused by [{}].", tp, e);
@@ -363,7 +361,7 @@ class ConsumerWithAdmin<K> extends KafkaConsumer<K, ExtMessage<K>> implements Ad
                 try {
                     records = super.poll(timeout);
                     for (ConsumerRecord<K, ExtMessage<K>> record : records) {
-                        record.value().updateByRecord(record);
+                        ExtMessageUtils.updateByRecord(record.value(), record);
                     }
                 } finally {
                     consumerLock.unlock();

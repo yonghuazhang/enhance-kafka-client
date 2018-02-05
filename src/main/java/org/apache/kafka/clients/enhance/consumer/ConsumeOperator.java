@@ -1,12 +1,10 @@
 package org.apache.kafka.clients.enhance.consumer;
 
-import org.apache.kafka.clients.enhance.ExtMessageFilter;
+import org.apache.kafka.clients.enhance.AbsExtMessageFilter;
 import org.apache.kafka.clients.enhance.consumer.listener.ConsumeMessageHook;
-import org.apache.kafka.clients.enhance.consumer.listener.ConsumeMessageHooks;
 import org.apache.kafka.clients.enhance.consumer.listener.MessageHandler;
 import org.apache.kafka.common.TopicPartition;
 
-import java.text.SimpleDateFormat;
 import java.util.Collection;
 import java.util.Set;
 import java.util.concurrent.TimeUnit;
@@ -28,11 +26,11 @@ public interface ConsumeOperator<K> {
 
     void subscribe(String topic, String filterPattern);
 
-    void subscribe(String topic, ExtMessageFilter<K> filter);
+    void subscribe(String topic, AbsExtMessageFilter<K> filter);
 
     void subscribe(Collection<String> topics, String filterPattern);
 
-    void subscribe(Collection<String> topics, ExtMessageFilter<K> filter);
+    void subscribe(Collection<String> topics, AbsExtMessageFilter<K> filter);
 
     void unsubscribe();
 

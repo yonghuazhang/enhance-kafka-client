@@ -37,9 +37,9 @@ public abstract class AbsConsumeService<K> implements ConsumeService<K> {
     private final ScheduledExecutorService scheduleExecTaskService;
     protected final ClientThreadFactory clientThreadFactory = new ClientThreadFactory("consume-service-threadpool");
     protected final KafkaPollMessageService<K> pollService;
-    protected final ConsumeDispatchMessageService dispatchService;
+    protected ShutdownableThread dispatchService;
 
-    protected final ReentrantLock syncLock = new ReentrantLock();
+    protected final ReentrantLock syncLock = new ReentrantLock(true);
 
     protected final AbsOffsetStorage offsetPersistor;
     protected final ConsumerWithAdmin<K> safeConsumer;
@@ -56,8 +56,8 @@ public abstract class AbsConsumeService<K> implements ConsumeService<K> {
         this.innerSender = innerSender;
         this.clientContext = clientContext;
         this.partitionDataManager = new PartitionDataManager<>();
-        this.pollService = new KafkaPollMessageService("kafka-poll-message-service", safeConsumer, partitionDataManager, clientContext);
-        this.dispatchService = new ConsumeDispatchMessageService("consume-dispatch-message-service");
+        this.pollService = new KafkaPollMessageService("kafka-poll-message-service", safeConsumer,
+                partitionDataManager, clientContext, syncLock);
         this.taskQueue = new ArrayBlockingQueue<>(clientContext.consumeQueueSize(), true);
         //[default resetStrategy] is RejectedStrategy, need process RejectedException.
         int coreThreadNum = clientContext.consumeThreadNum();
@@ -84,47 +84,20 @@ public abstract class AbsConsumeService<K> implements ConsumeService<K> {
 
     }
 
-    public class ConsumeDispatchMessageService extends ShutdownableThread {
-
-        public ConsumeDispatchMessageService(String name) {
-            super(name);
-        }
-
-        @Override
-        public void doWork() {
-            while (isRunning) {
-                Set<TopicPartition> topicPartitions = partitionDataManager.getAssignedPartition();
-                for (TopicPartition topicPartition : topicPartitions) {
-                    List<ConsumerRecord<K, ExtMessage<K>>> records =
-                            partitionDataManager.retrieveTaskRecords(topicPartition, clientContext.consumeBatchSize());
-                    if (!records.isEmpty()) {
-                        List<ExtMessage<K>> messages = new ArrayList<>(records.size());
-                        for (ConsumerRecord<K, ExtMessage<K>> record : records) {
-                            messages.add(record.value());
-                        }
-                        AbsConsumeTaskRequest<K> requestTask = new AbsConsumeTaskRequest<>(AbsConsumeService.this, clientContext.messageHandler(), partitionDataManager,
-                                messages, topicPartition, clientContext);
-                        logger.debug("dispatch consuming task at once. ===>" + messages);
-                        submitConsumeRequest(requestTask);
-                    }
-                }
-            }
-        }
-    }
-
     @Override
     public void start() {
         logger.debug("AbsConsumeService start service.");
         syncLock.lock();
         try {
             if (!isRunning) {
-
                 pollService.start();
                 dispatchService.start();
                 offsetPersistor.start();
-
                 isRunning = true;
             }
+        } catch (Exception ex) {
+            shutdownNow();
+            throw new KafkaConsumeException("start consumeService failed.");
         } finally {
             syncLock.unlock();
         }
@@ -134,12 +107,7 @@ public abstract class AbsConsumeService<K> implements ConsumeService<K> {
 
     @Override
     public void shutdown() {
-        try {
-            shutdown(DEFAULT_CLOSE_TIMEOUT_MS, TimeUnit.MILLISECONDS);
-        } catch (Throwable e) {
-            logger.warn("AbsConsumeService close error. due to ", e);
-            throw new KafkaConsumeException("ConsumeService close exception");
-        }
+        shutdown(DEFAULT_CLOSE_TIMEOUT_MS, TimeUnit.MILLISECONDS);
     }
 
     @Override
@@ -176,6 +144,8 @@ public abstract class AbsConsumeService<K> implements ConsumeService<K> {
 
                 offsetPersistor.shutdown();
             }
+        } catch (Throwable e) {
+            logger.warn("AbsConsumeService close error. due to ", e);
         } finally {
             syncLock.unlock();
         }
@@ -230,13 +200,11 @@ public abstract class AbsConsumeService<K> implements ConsumeService<K> {
             logger.info("TopicPartition[{}] seek to [{}].", partition, offset);
             syncLock.lock();
             try {
-                pollService.setSuspend(false);
                 safeConsumer.seek(partition, offset);
                 partitionDataManager.resetPartitionData(partition);
             } catch (Exception ex) {
                 logger.warn("seek offset error. due to ", ex);
             } finally {
-                pollService.setSuspend(true);
                 syncLock.unlock();
             }
         } else {
@@ -249,7 +217,6 @@ public abstract class AbsConsumeService<K> implements ConsumeService<K> {
         if (isRunning) {
             syncLock.lock();
             try {
-                pollService.setSuspend(false);
                 Set<TopicPartition> tps = safeConsumer.assignment();
                 HashMap<TopicPartition, Long> searchByTimestamp = new HashMap<>();
 
@@ -265,7 +232,6 @@ public abstract class AbsConsumeService<K> implements ConsumeService<K> {
             } catch (Exception ex) {
                 logger.warn("seekToTime error. due to ", ex);
             } finally {
-                pollService.setSuspend(true);
                 syncLock.unlock();
             }
         } else {
@@ -278,13 +244,11 @@ public abstract class AbsConsumeService<K> implements ConsumeService<K> {
         if (isRunning) {
             syncLock.lock();
             try {
-                pollService.setSuspend(false);
                 safeConsumer.seekToBeginning(safeConsumer.assignment());
                 partitionDataManager.resetAllPartitionData();
             } catch (Exception ex) {
                 logger.warn("seekToBeginning error. due to ", ex);
             } finally {
-                pollService.setSuspend(true);
                 syncLock.unlock();
             }
         } else {
@@ -297,13 +261,11 @@ public abstract class AbsConsumeService<K> implements ConsumeService<K> {
         if (isRunning) {
             syncLock.lock();
             try {
-                pollService.setSuspend(false);
                 safeConsumer.seekToEnd(safeConsumer.assignment());
                 partitionDataManager.resetAllPartitionData();
             } catch (Exception ex) {
                 logger.warn("seekToEnd error. due to ", ex);
             } finally {
-                pollService.setSuspend(true);
                 syncLock.unlock();
             }
         } else {

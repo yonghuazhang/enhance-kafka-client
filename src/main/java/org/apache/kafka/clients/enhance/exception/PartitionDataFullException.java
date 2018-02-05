@@ -16,7 +16,7 @@ public class PartitionDataFullException extends Exception {
         this.fromIdx = fromIdx;
     }
 
-    public PartitionDataFullException(String message{
+    public PartitionDataFullException(String message) {
         super(message);
         this.fromIdx = -1;
     }

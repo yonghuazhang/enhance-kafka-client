@@ -1,21 +1,22 @@
 package org.apache.kafka.clients.enhance.consumer;
 
+import org.apache.kafka.clients.enhance.AbsExtMessageFilter;
 import org.apache.kafka.clients.enhance.ExtMessage;
-import org.apache.kafka.clients.enhance.ExtMessageFilter;
 import org.apache.kafka.common.header.Headers;
 
 import java.util.Collection;
 import java.util.regex.Pattern;
 
-public class DefaultMessageFilter<K> implements ExtMessageFilter<K> {
+public class DefaultMessageFilter<K> extends AbsExtMessageFilter<K> {
     private final Pattern filterPattern;
-    private boolean permitAll = false;
 
     public DefaultMessageFilter(String sPat) {
         if (null == sPat || sPat.isEmpty() || ".*".equals(sPat) || "*".equals(sPat)) {
             permitAll = true;
+            this.filterPattern = Pattern.compile("\\.*");
+        } else {
+            this.filterPattern = Pattern.compile(sPat);
         }
-        this.filterPattern = Pattern.compile(sPat);
     }
 
     @Override

@@ -7,6 +7,8 @@ import org.apache.kafka.common.protocol.types.Struct;
 import org.apache.kafka.common.protocol.types.Type;
 import org.apache.kafka.common.serialization.Deserializer;
 import org.apache.kafka.common.serialization.Serializer;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.nio.ByteBuffer;
 import java.util.ArrayList;
@@ -25,7 +27,8 @@ import static org.apache.kafka.clients.enhance.ExtMessageDef.PROPERTY_RECONSUME_
  * Created by steven03.zhang on 2017/12/12.
  */
 public class ExtMessageEncoder<K> implements Serializer<ExtMessage<K>>, Deserializer<ExtMessage<K>> {
-    private final static Schema MESSAGE_PROP_KV = new Schema(new Field(MESSAGE_ATTR_KEY, Type.NULLABLE_STRING),
+    private static final Logger logger = LoggerFactory.getLogger(ExtMessageEncoder.class);
+    private static final Schema MESSAGE_PROP_KV = new Schema(new Field(MESSAGE_ATTR_KEY, Type.NULLABLE_STRING),
             new Field(MESSAGE_ATTR_VAL, Type.NULLABLE_STRING));
     private final static Schema MESSAGE_SCHEMA = new Schema(new Field(PROPERTY_RECONSUME_TIME, Type.INT8),
             new Field(PROPERTY_DELAY_TIME_LEVEL, Type.INT8),
@@ -38,21 +41,24 @@ public class ExtMessageEncoder<K> implements Serializer<ExtMessage<K>>, Deserial
 
     @Override
     public ExtMessage<K> deserialize(String topic, byte[] data) {
-        Struct mesgStruct = MESSAGE_SCHEMA.read(ByteBuffer.wrap(data));
-
         ExtMessage<K> extMessage = new ExtMessage<>();
         extMessage.setTopic(topic);
+        try {
+            Struct mesgStruct = MESSAGE_SCHEMA.read(ByteBuffer.wrap(data));
+            extMessage.setRetryCount((int) mesgStruct.get(PROPERTY_RECONSUME_TIME));
+            extMessage.setDelayedLevel((int) mesgStruct.get(PROPERTY_DELAY_TIME_LEVEL));
+            ByteBuffer bodyBuffer = (ByteBuffer) mesgStruct.get(MESSAGE_BODY_FIELD);
+            extMessage.setBody(bodyBuffer.array());
 
-        extMessage.setRetryCount((int) mesgStruct.get(PROPERTY_RECONSUME_TIME));
-        extMessage.setDelayedLevel((int) mesgStruct.get(PROPERTY_DELAY_TIME_LEVEL));
-        ByteBuffer bodyBuffer = (ByteBuffer) mesgStruct.get(MESSAGE_BODY_FIELD);
-        extMessage.setBody(bodyBuffer.array());
-
-        for (Object objProp : mesgStruct.getArray(MESSAGE_ATTR_FIELD)) {
-            Struct pStruct = (Struct) objProp;
-            String key = pStruct.getString(MESSAGE_ATTR_KEY);
-            String val = pStruct.getString(MESSAGE_ATTR_VAL);
-            extMessage.addProperty(key, val);
+            for (Object objProp : mesgStruct.getArray(MESSAGE_ATTR_FIELD)) {
+                Struct pStruct = (Struct) objProp;
+                String key = pStruct.getString(MESSAGE_ATTR_KEY);
+                String val = pStruct.getString(MESSAGE_ATTR_VAL);
+                extMessage.addProperty(key, val);
+            }
+        } catch (Exception ex) {
+            logger.warn("message format isn't the format of ExtMessage.");
+            extMessage.setBody(data);
         }
         return extMessage;
     }
