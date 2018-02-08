@@ -22,7 +22,7 @@ public class OrdinalConsumeTaskRequest<K> extends AbsConsumeTaskRequest<K> {
     }
 
     @Override
-    public void dealWithConsumeStatus(ConsumeStatus status) {
+    public void processConsumeStatus(ConsumeStatus status) {
 
     }
 

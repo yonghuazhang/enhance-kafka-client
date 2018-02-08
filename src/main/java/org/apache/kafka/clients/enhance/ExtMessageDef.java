@@ -26,6 +26,8 @@ public class ExtMessageDef {
     public static final String PROPERTY_TAGS = "TAGS";
     public static final String PROPERTY_DELAY_TIME_LEVEL = "DELAY_LEVEL";
     public static final String PROPERTY_RETRY_TOPIC = "RETRY_TOPIC";
+    public static final String PROPERTY_RETRY_PARTITION_ID = "RETRY_QID";
+    public static final String PROPERTY_RETRY_OFFSET = "RETRY_OFFSET";
     public static final String PROPERTY_REAL_TOPIC = "REAL_TOPIC";
     public static final String PROPERTY_REAL_PARTITION_ID = "REAL_QID";
     public static final String PROPERTY_REAL_OFFSET = "REAL_OFFSET";
@@ -42,10 +44,12 @@ public class ExtMessageDef {
     public static final int MAX_RECONSUME_COUNT = 18;
     public static final int MAX_DELAY_TIME_LEVEL = MAX_RECONSUME_COUNT;
 
-    public final static String MESSAGE_BODY_FIELD = "FLD_BODY_DATA";
-    public final static String MESSAGE_ATTR_FIELD = "FLD_ATTR_DATA";
-    public final static String MESSAGE_ATTR_KEY = "ATTR_KEY";
-    public final static String MESSAGE_ATTR_VAL = "ATTR_VAL";
+    public final static String EXT_MESSAGE_RETRY_COUNT_FIELD = "FLD_RETRY_COUNT";
+    public final static String EXT_MESSAGE_DELAY_LEVEL_FIELD = "FLD_DELAY_LEVEL";
+    public final static String EXT_MESSAGE_BODY_FIELD = "FLD_BODY_DATA";
+    public final static String EXT_MESSAGE_ATTR_FIELD = "FLD_ATTR_DATA";
+    public final static String EXT_MESSAGE_ATTR_KEY = "ATTR_KEY";
+    public final static String EXT_MESSAGE_ATTR_VAL = "ATTR_VAL";
     public final static long INVALID_OFFSET_VALUE = -1L;
 
     public static final HashSet<String> STRING_HASH_SET = new HashSet<String>();
@@ -55,13 +59,18 @@ public class ExtMessageDef {
         STRING_HASH_SET.add(PROPERTY_MSG_REGION);
         STRING_HASH_SET.add(PROPERTY_KEYS);
         STRING_HASH_SET.add(PROPERTY_TAGS);
+
         STRING_HASH_SET.add(PROPERTY_DELAY_TIME_LEVEL);
         STRING_HASH_SET.add(PROPERTY_RETRY_TOPIC);
+        STRING_HASH_SET.add(PROPERTY_RETRY_PARTITION_ID);
+        STRING_HASH_SET.add(PROPERTY_RETRY_OFFSET);
+
         STRING_HASH_SET.add(PROPERTY_REAL_TOPIC);
         STRING_HASH_SET.add(PROPERTY_REAL_PARTITION_ID);
-        STRING_HASH_SET.add(PROPERTY_REAL_STORE_TIME);
-        STRING_HASH_SET.add(PROPERTY_TRANSACTION_PREPARED);
         STRING_HASH_SET.add(PROPERTY_REAL_OFFSET);
+        STRING_HASH_SET.add(PROPERTY_REAL_STORE_TIME);
+
+        STRING_HASH_SET.add(PROPERTY_TRANSACTION_PREPARED);
         STRING_HASH_SET.add(PROPERTY_BUYER_ID);
         STRING_HASH_SET.add(PROPERTY_ORIGIN_MESSAGE_ID);
         STRING_HASH_SET.add(PROPERTY_RECONSUME_TIME);

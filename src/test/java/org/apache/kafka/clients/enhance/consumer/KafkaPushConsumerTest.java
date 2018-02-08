@@ -1,7 +1,6 @@
 package org.apache.kafka.clients.enhance.consumer;
 
 import org.apache.kafka.clients.enhance.ExtMessage;
-import org.apache.kafka.clients.enhance.consumer.listener.AbsConsumeHandlerContext;
 import org.apache.kafka.clients.enhance.consumer.listener.ConcurrentConsumeHandlerContext;
 import org.apache.kafka.clients.enhance.consumer.listener.ConcurrentMessageHandler;
 import org.apache.kafka.clients.enhance.consumer.listener.ConsumeStatus;
@@ -11,8 +10,6 @@ import org.junit.Test;
 import java.util.List;
 import java.util.Properties;
 import java.util.concurrent.TimeUnit;
-
-import static org.junit.Assert.*;
 
 public class KafkaPushConsumerTest {
     private KafkaPushConsumer<String> consumer;
@@ -35,11 +32,12 @@ public class KafkaPushConsumerTest {
         consumer.registerHandler(new ConcurrentMessageHandler<String>() {
             @Override
             public ConsumeStatus consumeMessage(List<ExtMessage<String>> message, ConcurrentConsumeHandlerContext consumeContext) {
-                return null;
+
+                System.out.println("message num=" + message.size() + "\t --->" + message.get(0).getRetryCount());
+                consumeContext.updateConsumeStatusInBatch(0, true);
+                return ConsumeStatus.CONSUME_RETRY_LATER;
             }
         });
-
-
 
     }
 
@@ -47,6 +45,9 @@ public class KafkaPushConsumerTest {
     public void start() throws Exception {
         consumer.subscribe("test");
         consumer.start();
+
+        TimeUnit.SECONDS.sleep(10);
+        consumer.seekToBeginning();
 
         TimeUnit.SECONDS.sleep(1000);
     }

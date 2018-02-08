@@ -44,7 +44,7 @@ public abstract class ShutdownableThread extends KafkaThread {
 
     public boolean initiateShutdown() {
         if (isRunning.compareAndSet(true, false)) {
-            logger.info("Shutting down");
+            logger.info("Shutting down thread.");
             if (isInterruptible) {
                 interrupt();
             }
@@ -66,7 +66,7 @@ public abstract class ShutdownableThread extends KafkaThread {
 
     @Override
     public void run() {
-        logger.info("Starting...");
+        logger.info("Starting thread...");
 
         try {
             while (isRunning.get()) {

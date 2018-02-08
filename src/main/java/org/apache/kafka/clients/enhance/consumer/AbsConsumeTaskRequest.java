@@ -39,7 +39,7 @@ public abstract class AbsConsumeTaskRequest<K> implements Callable<ConsumeTaskRe
         this.messages = Collections.unmodifiableList(messages);
     }
 
-    public abstract void dealWithConsumeStatus(ConsumeStatus status);
+    public abstract void processConsumeStatus(ConsumeStatus status);
 
     public long getTaskCreatedTime() {
         return taskCreatedTime;

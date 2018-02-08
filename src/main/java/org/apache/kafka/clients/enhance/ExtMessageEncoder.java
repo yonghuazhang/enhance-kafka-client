@@ -15,12 +15,12 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 
-import static org.apache.kafka.clients.enhance.ExtMessageDef.MESSAGE_BODY_FIELD;
-import static org.apache.kafka.clients.enhance.ExtMessageDef.MESSAGE_ATTR_FIELD;
-import static org.apache.kafka.clients.enhance.ExtMessageDef.MESSAGE_ATTR_KEY;
-import static org.apache.kafka.clients.enhance.ExtMessageDef.MESSAGE_ATTR_VAL;
-import static org.apache.kafka.clients.enhance.ExtMessageDef.PROPERTY_DELAY_TIME_LEVEL;
-import static org.apache.kafka.clients.enhance.ExtMessageDef.PROPERTY_RECONSUME_TIME;
+import static org.apache.kafka.clients.enhance.ExtMessageDef.EXT_MESSAGE_ATTR_FIELD;
+import static org.apache.kafka.clients.enhance.ExtMessageDef.EXT_MESSAGE_ATTR_KEY;
+import static org.apache.kafka.clients.enhance.ExtMessageDef.EXT_MESSAGE_ATTR_VAL;
+import static org.apache.kafka.clients.enhance.ExtMessageDef.EXT_MESSAGE_BODY_FIELD;
+import static org.apache.kafka.clients.enhance.ExtMessageDef.EXT_MESSAGE_DELAY_LEVEL_FIELD;
+import static org.apache.kafka.clients.enhance.ExtMessageDef.EXT_MESSAGE_RETRY_COUNT_FIELD;
 
 
 /**
@@ -28,12 +28,11 @@ import static org.apache.kafka.clients.enhance.ExtMessageDef.PROPERTY_RECONSUME_
  */
 public class ExtMessageEncoder<K> implements Serializer<ExtMessage<K>>, Deserializer<ExtMessage<K>> {
     private static final Logger logger = LoggerFactory.getLogger(ExtMessageEncoder.class);
-    private static final Schema MESSAGE_PROP_KV = new Schema(new Field(MESSAGE_ATTR_KEY, Type.NULLABLE_STRING),
-            new Field(MESSAGE_ATTR_VAL, Type.NULLABLE_STRING));
-    private final static Schema MESSAGE_SCHEMA = new Schema(new Field(PROPERTY_RECONSUME_TIME, Type.INT8),
-            new Field(PROPERTY_DELAY_TIME_LEVEL, Type.INT8),
-            new Field(MESSAGE_BODY_FIELD, Type.BYTES),
-            new Field(MESSAGE_ATTR_FIELD, new ArrayOf(MESSAGE_PROP_KV)));
+    private final static Schema EXT_MESSAGE_SCHEMA = new Schema(new Field(EXT_MESSAGE_RETRY_COUNT_FIELD, Type.INT8),
+            new Field(EXT_MESSAGE_DELAY_LEVEL_FIELD, Type.INT8),
+            new Field(EXT_MESSAGE_BODY_FIELD, Type.BYTES),
+            new Field(EXT_MESSAGE_ATTR_FIELD, new ArrayOf(new Schema(new Field(EXT_MESSAGE_ATTR_KEY, Type.NULLABLE_STRING),
+                    new Field(EXT_MESSAGE_ATTR_VAL, Type.NULLABLE_STRING)))));
 
     @Override
     public void configure(Map<String, ?> configs, boolean isKey) {
@@ -44,16 +43,16 @@ public class ExtMessageEncoder<K> implements Serializer<ExtMessage<K>>, Deserial
         ExtMessage<K> extMessage = new ExtMessage<>();
         extMessage.setTopic(topic);
         try {
-            Struct mesgStruct = MESSAGE_SCHEMA.read(ByteBuffer.wrap(data));
-            extMessage.setRetryCount((int) mesgStruct.get(PROPERTY_RECONSUME_TIME));
-            extMessage.setDelayedLevel((int) mesgStruct.get(PROPERTY_DELAY_TIME_LEVEL));
-            ByteBuffer bodyBuffer = (ByteBuffer) mesgStruct.get(MESSAGE_BODY_FIELD);
+            Struct mesgStruct = EXT_MESSAGE_SCHEMA.read(ByteBuffer.wrap(data));
+            extMessage.setRetryCount((byte)mesgStruct.get(EXT_MESSAGE_RETRY_COUNT_FIELD));
+            extMessage.setDelayedLevel((byte) mesgStruct.get(EXT_MESSAGE_DELAY_LEVEL_FIELD));
+            ByteBuffer bodyBuffer = (ByteBuffer) mesgStruct.get(EXT_MESSAGE_BODY_FIELD);
             extMessage.setBody(bodyBuffer.array());
 
-            for (Object objProp : mesgStruct.getArray(MESSAGE_ATTR_FIELD)) {
+            for (Object objProp : mesgStruct.getArray(EXT_MESSAGE_ATTR_FIELD)) {
                 Struct pStruct = (Struct) objProp;
-                String key = pStruct.getString(MESSAGE_ATTR_KEY);
-                String val = pStruct.getString(MESSAGE_ATTR_VAL);
+                String key = pStruct.getString(EXT_MESSAGE_ATTR_KEY);
+                String val = pStruct.getString(EXT_MESSAGE_ATTR_VAL);
                 extMessage.addProperty(key, val);
             }
         } catch (Exception ex) {
@@ -65,26 +64,27 @@ public class ExtMessageEncoder<K> implements Serializer<ExtMessage<K>>, Deserial
 
     @Override
     public byte[] serialize(String topic, ExtMessage<K> data) {
-        Struct mesgStruct = new Struct(MESSAGE_SCHEMA);
+        Struct msgStruct = new Struct(EXT_MESSAGE_SCHEMA);
 
-        mesgStruct.set(PROPERTY_RECONSUME_TIME, data.getRetryCount());
-        mesgStruct.set(PROPERTY_DELAY_TIME_LEVEL, data.getDelayedLevel());
-        mesgStruct.set(MESSAGE_BODY_FIELD, ByteBuffer.wrap(data.getBody()));
+        msgStruct.set(EXT_MESSAGE_RETRY_COUNT_FIELD, (byte)data.getRetryCount());
+        msgStruct.set(EXT_MESSAGE_DELAY_LEVEL_FIELD, (byte)data.getDelayedLevel());
+        msgStruct.set(EXT_MESSAGE_BODY_FIELD, ByteBuffer.wrap(data.getBody()));
 
         List<Struct> propStructList = new ArrayList<>();
         for (Map.Entry<String, String> item : data.getProperties().entrySet()) {
-            Struct propStruct = mesgStruct.instance(MESSAGE_ATTR_FIELD);
-            propStruct.set(MESSAGE_ATTR_KEY, item.getKey());
-            propStruct.set(MESSAGE_ATTR_VAL, item.getValue());
+            Struct propStruct = msgStruct.instance(EXT_MESSAGE_ATTR_FIELD);
+            propStruct.set(EXT_MESSAGE_ATTR_KEY, item.getKey());
+            propStruct.set(EXT_MESSAGE_ATTR_VAL, item.getValue());
             propStructList.add(propStruct);
         }
 
-        mesgStruct.set(MESSAGE_ATTR_FIELD, propStructList);
-        int byteSize = mesgStruct.sizeOf();
+        msgStruct.set(EXT_MESSAGE_ATTR_FIELD, propStructList.toArray());
+        int byteSize = msgStruct.sizeOf();
 
         //use bufferpool to improve allocate performance, and reduce jvm gc.
         ByteBuffer buffer = ByteBuffer.allocate(byteSize);
-        mesgStruct.writeTo(buffer);
+        msgStruct.writeTo(buffer);
+        buffer.rewind();
         return buffer.array();
     }
 

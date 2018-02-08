@@ -10,8 +10,8 @@ public class OrdinalConsumeHandlerContext extends AbsConsumeHandlerContext {
     private boolean autoCommit;
     private long suspendTimeInMs;
 
-    public OrdinalConsumeHandlerContext(TopicPartition tp, long ackOffset) {
-        super(tp, ackOffset);
+    public OrdinalConsumeHandlerContext(TopicPartition tp, long ackOffset, int batchSize) {
+        super(tp, ackOffset, batchSize);
         this.autoCommit = true;
         this.suspendTimeInMs = -1L;
     }

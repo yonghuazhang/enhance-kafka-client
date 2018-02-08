@@ -1,7 +1,6 @@
 package org.apache.kafka.clients.enhance.consumer;
 
 import org.apache.kafka.clients.consumer.ConsumerRebalanceListener;
-import org.apache.kafka.clients.consumer.ConsumerRecord;
 import org.apache.kafka.clients.consumer.OffsetAndTimestamp;
 import org.apache.kafka.clients.enhance.ClientThreadFactory;
 import org.apache.kafka.clients.enhance.ExtMessage;
@@ -11,12 +10,13 @@ import org.apache.kafka.clients.producer.KafkaProducer;
 import org.apache.kafka.clients.producer.ProducerRecord;
 import org.apache.kafka.clients.producer.RecordMetadata;
 import org.apache.kafka.common.TopicPartition;
+import org.apache.kafka.common.internals.Topic;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.util.ArrayList;
+import java.util.Collection;
 import java.util.HashMap;
-import java.util.List;
+import java.util.HashSet;
 import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.ArrayBlockingQueue;
@@ -90,6 +90,7 @@ public abstract class AbsConsumeService<K> implements ConsumeService<K> {
         syncLock.lock();
         try {
             if (!isRunning) {
+                subscribe(clientContext.getTopics());
                 pollService.start();
                 dispatchService.start();
                 offsetPersistor.start();
@@ -181,17 +182,28 @@ public abstract class AbsConsumeService<K> implements ConsumeService<K> {
     }
 
     @Override
-    public boolean sendMessageBack(ExtMessage<K> msg, int delayLevel) {
+    public boolean sendMessageBack(String topic, ExtMessage<K> msg, int delayLevel) {
         ProducerRecord<K, ExtMessage<K>> record = null;
         try {
-            record = new ProducerRecord<>(clientContext.retryTopicName(), msg);
+            record = new ProducerRecord<>(topic, msg.getMsgKey(), msg);
             Future<RecordMetadata> result = innerSender.send(record);
             result.get(SEND_MESSAGE_BACK_WAIT_TIMEOUT_MS, TimeUnit.MILLISECONDS);
+            logger.trace("sendMessageBack message[{}] successfully.", record.toString());
             return true;
         } catch (Throwable e) {
             logger.warn("sendMessageBack failed. records = [{}]", record);
         }
         return false;
+    }
+
+    private Set<TopicPartition> filterAssignedRetryTopic(Set<TopicPartition> origAssigned) {
+        Set<TopicPartition> filterTopicPartitions = new HashSet<>();
+        for(TopicPartition tp : origAssigned) {
+            if (!tp.topic().equals(clientContext.retryTopicName())) {
+                filterTopicPartitions.add(tp);
+            }
+        }
+        return filterTopicPartitions;
     }
 
     @Override
@@ -217,7 +229,7 @@ public abstract class AbsConsumeService<K> implements ConsumeService<K> {
         if (isRunning) {
             syncLock.lock();
             try {
-                Set<TopicPartition> tps = safeConsumer.assignment();
+                Set<TopicPartition> tps = filterAssignedRetryTopic(safeConsumer.assignment());
                 HashMap<TopicPartition, Long> searchByTimestamp = new HashMap<>();
 
                 for (TopicPartition tp : tps) {
@@ -244,7 +256,7 @@ public abstract class AbsConsumeService<K> implements ConsumeService<K> {
         if (isRunning) {
             syncLock.lock();
             try {
-                safeConsumer.seekToBeginning(safeConsumer.assignment());
+                safeConsumer.seekToBeginning(filterAssignedRetryTopic(safeConsumer.assignment()));
                 partitionDataManager.resetAllPartitionData();
             } catch (Exception ex) {
                 logger.warn("seekToBeginning error. due to ", ex);
@@ -261,7 +273,7 @@ public abstract class AbsConsumeService<K> implements ConsumeService<K> {
         if (isRunning) {
             syncLock.lock();
             try {
-                safeConsumer.seekToEnd(safeConsumer.assignment());
+                safeConsumer.seekToEnd(filterAssignedRetryTopic(safeConsumer.assignment()));
                 partitionDataManager.resetAllPartitionData();
             } catch (Exception ex) {
                 logger.warn("seekToEnd error. due to ", ex);
@@ -276,6 +288,30 @@ public abstract class AbsConsumeService<K> implements ConsumeService<K> {
     @Override
     public ConsumerRebalanceListener getRebalanceListener() {
         return offsetPersistor;
+    }
+
+    @Override
+    public void subscribe(Collection<String> topics) {
+        syncLock.lock();
+        try {
+            safeConsumer.subscribe(topics, offsetPersistor);
+        } catch (Exception ex) {
+            logger.warn("ConsumeService subscribe error. due to ", ex);
+        } finally {
+            syncLock.unlock();
+        }
+    }
+
+    @Override
+    public void unsubscribe() {
+        syncLock.lock();
+        try {
+            safeConsumer.unsubscribe();
+        } catch (Exception ex) {
+            logger.warn("cancel topic subscribe error. due to ", ex);
+        } finally {
+            syncLock.unlock();
+        }
     }
 
     public void dispatchTaskLater(final AbsConsumeTaskRequest<K> requestTask, final long timeout, final TimeUnit unit) {

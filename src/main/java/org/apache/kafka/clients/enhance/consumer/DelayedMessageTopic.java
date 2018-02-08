@@ -64,4 +64,15 @@ public enum DelayedMessageTopic {
         }
         return allDelayedTopics[idx].getDelayedTopicName(preffix, suffix);
     }
+
+    public static DelayedMessageTopic parseFromDelayLevel(int level) {
+        DelayedMessageTopic[] allDelayedTopics = DelayedMessageTopic.values();
+        int idx = level - 1;
+        if (idx < 0) {
+            idx = 0;
+        } else if(idx > allDelayedTopics.length - 1) {
+            idx = allDelayedTopics.length - 1;
+        }
+        return allDelayedTopics[idx];
+    }
 }

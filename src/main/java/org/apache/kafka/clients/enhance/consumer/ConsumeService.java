@@ -1,9 +1,11 @@
 package org.apache.kafka.clients.enhance.consumer;
 
 import org.apache.kafka.clients.consumer.ConsumerRebalanceListener;
+import org.apache.kafka.clients.enhance.AbsExtMessageFilter;
 import org.apache.kafka.clients.enhance.ExtMessage;
 import org.apache.kafka.common.TopicPartition;
 
+import java.util.Collection;
 import java.util.concurrent.TimeUnit;
 
 /**
@@ -28,7 +30,7 @@ public interface ConsumeService<K> {
 
     void submitConsumeRequest(final AbsConsumeTaskRequest<K> requestTask);
 
-    boolean sendMessageBack(final ExtMessage<K> msg, final int delayLevel);
+    boolean sendMessageBack(final String topic, final ExtMessage<K> msg, final int delayLevel);
 
     void seek(TopicPartition partition, long offset);
 
@@ -39,5 +41,9 @@ public interface ConsumeService<K> {
     void seekToEnd();
 
     ConsumerRebalanceListener getRebalanceListener();
+
+    void subscribe(Collection<String> topics);
+
+    void unsubscribe();
 
 }

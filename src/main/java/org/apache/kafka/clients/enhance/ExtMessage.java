@@ -10,6 +10,10 @@ import java.util.Map;
 import java.util.Properties;
 
 import static org.apache.kafka.clients.enhance.ExtMessageDef.MAX_RECONSUME_COUNT;
+import static org.apache.kafka.clients.enhance.ExtMessageDef.PROPERTY_REAL_OFFSET;
+import static org.apache.kafka.clients.enhance.ExtMessageDef.PROPERTY_REAL_PARTITION_ID;
+import static org.apache.kafka.clients.enhance.ExtMessageDef.PROPERTY_REAL_STORE_TIME;
+import static org.apache.kafka.clients.enhance.ExtMessageDef.PROPERTY_REAL_TOPIC;
 import static org.apache.kafka.clients.enhance.ExtMessageDef.joinTagsOrKeys;
 import static org.apache.kafka.clients.enhance.ExtMessageDef.splitTagsOrKeys;
 import static org.apache.kafka.clients.enhance.ExtMessageDef.validateTagOrKey;
@@ -21,7 +25,7 @@ public class ExtMessage<K> {
     private static final Logger log = LoggerFactory.getLogger(ExtMessage.class);
 
     private String topic;
-    private K mesgKey;
+    private K msgKey;
     private int partition;
     private long offset;
     private long storeTimeMs;
@@ -31,6 +35,26 @@ public class ExtMessage<K> {
     private int delayedLevel;
     private byte[] body;
     private final Map<String, String> properties = new HashMap<>();
+
+    public static <K> ExtMessage<K> parseFromRetryMessage(ExtMessage<K> retryMessage) {
+        if (retryMessage.getRetryCount() > 0) {
+            ExtMessage<K> newMessage = new ExtMessage<>();
+            newMessage.setTopic(retryMessage.getProperty(PROPERTY_REAL_TOPIC));
+            newMessage.setPartion(Integer.parseInt(retryMessage.getProperty(PROPERTY_REAL_PARTITION_ID)));
+            newMessage.setOffset(Long.parseLong(retryMessage.getProperty(PROPERTY_REAL_OFFSET)));
+            newMessage.setStoreTimeMs(Long.parseLong(retryMessage.getProperty(PROPERTY_REAL_STORE_TIME)));
+
+            newMessage.setBody(retryMessage.getBody());
+            newMessage.setDelayedLevel(retryMessage.getDelayedLevel());
+            newMessage.setRetryCount(retryMessage.getRetryCount());
+            return newMessage;
+        }
+        return retryMessage;
+    }
+
+    public K getMsgKey() {
+        return msgKey;
+    }
 
     public long getStoreTimeMs() {
         return storeTimeMs;
@@ -128,15 +152,15 @@ public class ExtMessage<K> {
         this.addProperty(ExtMessageDef.PROPERTY_TAGS, joinTagsOrKeys(tags));
     }
 
-    public Collection<String> getKeys() {
+    public Collection<String> getUserKeys() {
         return splitTagsOrKeys(this.getProperty(ExtMessageDef.PROPERTY_KEYS));
     }
 
-    public void setKeys(String key) {
+    public void setUserKeys(String key) {
         this.addProperty(ExtMessageDef.PROPERTY_KEYS, validateTagOrKey(key));
     }
 
-    public void setKeys(Collection<String> keys) {
+    public void setUserKeys(Collection<String> keys) {
         this.addProperty(ExtMessageDef.PROPERTY_KEYS, joinTagsOrKeys(keys));
     }
 
@@ -178,7 +202,7 @@ public class ExtMessage<K> {
     }
 
     ExtMessage<K> updateByRecord(ConsumerRecord<K, ExtMessage<K>> record) {
-        this.mesgKey = record.key();
+        this.msgKey = record.key();
         this.offset = record.offset();
         this.partition = record.partition();
         this.storeTimeMs = record.timestamp();
@@ -216,5 +240,25 @@ public class ExtMessage<K> {
     @Override
     public String toString() {
         return topic + "-" + partition + "-" + offset;
+    }
+
+    @Override
+    public boolean equals(Object other) {
+        if (this == other) return true;
+        if (other == null || getClass() != other.getClass()) return false;
+
+        ExtMessage<?> that = (ExtMessage<?>) other;
+
+        if (partition != that.partition) return false;
+        if (offset != that.offset) return false;
+        return topic.equals(that.topic);
+    }
+
+    @Override
+    public int hashCode() {
+        int result = topic.hashCode();
+        result = 31 * result + partition;
+        result = 31 * result + (int) (offset ^ (offset >>> 32));
+        return result;
     }
 }

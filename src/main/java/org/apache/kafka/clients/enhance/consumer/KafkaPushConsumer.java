@@ -138,8 +138,8 @@ public class KafkaPushConsumer<K> implements ConsumeOperator<K> {
     public void subscribe(Collection<String> topics, AbsExtMessageFilter<K> filter) {
         clientContext.addTopic(topics);
         setMessageFilter(filter);
-        if (isRunning && null != safeConsumer) {
-            safeConsumer.subscribe(topics, consumeService.getRebalanceListener());
+        if (isRunning && null != consumeService) {
+            consumeService.subscribe(clientContext.getTopics());
         }
     }
 
@@ -154,8 +154,8 @@ public class KafkaPushConsumer<K> implements ConsumeOperator<K> {
     @Override
     public void unsubscribe() {
         clientContext.clearTopic();
-        if (isRunning && null != safeConsumer) {
-            safeConsumer.unsubscribe();
+        if (isRunning && null != consumeService) {
+            consumeService.unsubscribe();
         }
     }
 
@@ -219,8 +219,6 @@ public class KafkaPushConsumer<K> implements ConsumeOperator<K> {
                     default:
                         throw new KafkaConsumeException("unsupported Consume type. please check code.");
                 }
-
-                safeConsumer.subscribe(clientContext.getTopics(), consumeService.getRebalanceListener());
                 consumeService.start();
                 isRunning = true;
             } catch (Exception ex) {

@@ -38,6 +38,7 @@ public final class ConsumeClientContext<K> {
     public static final int DEFAULT_CONSUME_BATCH_SIZE = 1;
     public static final long DEFAULT_OFFSET_STORE_INTERVALS = 5000L;
     public static final long CLIENT_RETRY_BACKOFF_MS = 3000L;
+    public static final long DEFAULT_MAX_MESSAGE_DEAL_TIME_MS = 5 * 60 * 1000L;
 
     private final Map<String, Object> innerConsumeConfig = new HashMap<>();
     private final Map<String, Object> innerProducerConfig = new HashMap<>();
@@ -59,6 +60,7 @@ public final class ConsumeClientContext<K> {
     private long offsetStoreIntervals = DEFAULT_OFFSET_STORE_INTERVALS; //every 5s store current offsets
     private long pollMessageAwaitTimeoutMs = TIME_WAIT_FOR_POLL_REC_MS;
     private long clientRetryBackoffMs = CLIENT_RETRY_BACKOFF_MS;
+    private long maxMessageDealTimeMs = DEFAULT_MAX_MESSAGE_DEAL_TIME_MS;
 
     private Serializer<K> keySerializer = null;
     private int producerRequestTimeoutMs = INVALID_PROPERTY_VALUE;
@@ -71,13 +73,26 @@ public final class ConsumeClientContext<K> {
         try {
             clientRetryBackoffMs = unit.toMillis(backoffTime);
         } catch (Exception ex) {
-            logger.warn("setting retry backoff time failed, use default value. due to ", ex);
+            logger.warn("Setting retry backoff time failed, use default value. due to ", ex);
         }
         return this;
     }
 
     public long clientRetryBackoffMs() {
         return clientRetryBackoffMs;
+    }
+
+    public ConsumeClientContext maxMessageDealTimeMs(long dealTime, TimeUnit unit) {
+        try {
+            clientRetryBackoffMs = unit.toMillis(dealTime);
+        } catch (Exception ex) {
+            logger.warn("Setting maxMessageDealTimeMs time failed, use default value. due to ", ex);
+        }
+        return this;
+    }
+
+    public long maxMessageDealTimeMs() {
+        return maxMessageDealTimeMs;
     }
 
     public ConsumeClientContext addConsumeHook(ConsumeMessageHook<K> consumeHook) {
