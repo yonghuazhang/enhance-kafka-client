@@ -184,7 +184,7 @@ class ConsumerWithAdmin<K> extends KafkaConsumer<K, ExtMessage<K>> implements Ad
             DescribeTopicsResult result = adminClient.describeTopics(Arrays.asList(topic));
             return result.all().get(timeout, TimeUnit.MILLISECONDS).get(topic);
         } catch (Exception ex) {
-            log.warn("describeTopic topic [{}] failed, caused by [{}].", topic, ex);
+            log.info("describe topic [{}] failed, the topic isn't exists.", topic);
             return null;
         } finally {
             adminLock.unlock();

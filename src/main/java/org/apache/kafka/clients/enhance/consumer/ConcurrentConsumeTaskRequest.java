@@ -48,7 +48,7 @@ public class ConcurrentConsumeTaskRequest<K> extends AbsConsumeTaskRequest<K> {
         List<Long> offsets = new ArrayList<>(messages.size());
         switch (status) {
             case CONSUME_RETRY_LATER:
-                List<ExtMessage<K>> failedRecords = new ArrayList<>();
+                List<ExtMessage<K>> localRetryRecords = new ArrayList<>();
                 int messageSize = messages.size();
 
                 for (int idx = 0; idx < messageSize; idx++) {
@@ -61,49 +61,70 @@ public class ConcurrentConsumeTaskRequest<K> extends AbsConsumeTaskRequest<K> {
 
                         if (msg.getRetryCount() < MAX_RECONSUME_COUNT) {
                             updateMessageAttrBeforeRetrySendback(msg, delayLevel);
-                            boolean sendRetryOk = consumeService.sendMessageBack(retryTopic, msg, msg.getDelayedLevel());
-                            if (!sendRetryOk) {
-                                failedRecords.add(msg);
+
+                            boolean isLocalRetry = false;
+                            switch (clientContext.consumeModel()) {
+                                case GROUP_CLUSTERING:
+                                    isLocalRetry = consumeService.sendMessageBack(retryTopic, msg, msg.getDelayedLevel());
+                                    break;
+                                case GROUP_BROADCASTING:
+                                default:
+                                    break;
+                            }
+
+                            if (!isLocalRetry) {
+                                localRetryRecords.add(msg);
                             }
                         } else {
-                            if (!consumeService.sendMessageBack(deadletterTopic, msg, 0)) {
-                                logger.warn("sending dead letter message failed. please check it [{}].", msg.toString());
+                            switch (clientContext.consumeModel()) {
+                                case GROUP_CLUSTERING:
+                                    ((ConcurrentConsumeService) consumeService).createDeadLetterTopic();
+                                    if (!consumeService.sendMessageBack(deadletterTopic, msg, 0)) {
+                                        logger.warn("sending dead letter message failed. please check it [{}].", msg);
+                                    }
+                                    break;
+                                case GROUP_BROADCASTING:
+                                default:
+                                    logger.warn("[ConcurrentConsumeTaskRequest-Broadcast] message [{}] will be dropped, since exceed max retry count.", msg);
+                                    break;
                             }
+
                         }
                     }
                 }
 
-                if (!failedRecords.isEmpty()) {
-                    logger.trace("sending message back failed list:" + Arrays.toString(failedRecords.toArray(new Object[0])));
-                    consumeService.dispatchTaskLater(new ConcurrentConsumeTaskRequest<>(consumeService, manager, failedRecords,
-                            topicPartition, clientContext, handler), DelayedMessageTopic.SYS_DELAYED_TOPIC_10S.getDurationMs(), TimeUnit.MILLISECONDS);
+                if (!localRetryRecords.isEmpty()) {
+                    logger.trace("need local retry message list:" + Arrays.toString(localRetryRecords.toArray(new Object[0])));
+                    consumeService.dispatchTaskLater(new ConcurrentConsumeTaskRequest<>(consumeService, manager, localRetryRecords,
+                            topicPartition, clientContext, handler), DelayedMessageTopic.SYS_DELAYED_TOPIC_5S.getDurationMs(), TimeUnit.MILLISECONDS);
                 }
 
                 for (ExtMessage<K> message : messages) {
-                    if (failedRecords.isEmpty()) {
+                    if (localRetryRecords.isEmpty()) {
                         offsets.add(message.getOffset());
-                    } else if (!failedRecords.contains(message)) {
+                    } else if (!localRetryRecords.contains(message)) {
                         offsets.add(message.getOffset());
                     }
                 }
-                logger.trace("start commitoffsets ---------------> " + offsets.toString());
-                manager.commitSlidingWinOffset(topicPartition, offsets);
+                logger.trace("start commitoffsets ---------------> " + offsets);
+                manager.commitOffsets(topicPartition, offsets);
                 break;
             case CONSUME_SUCCESS:
                 for (ExtMessage<K> message : messages) {
                     offsets.add(message.getOffset());
                 }
-                logger.trace("start commitoffsets ---------------> " + offsets.toString());
-                manager.commitSlidingWinOffset(topicPartition, offsets);
+                logger.trace("start commitoffsets ---------------> " + offsets);
+                manager.commitOffsets(topicPartition, offsets);
                 break;
             default:
+                logger.warn("unknown ConsumeStatus. offset = " + offsets);
                 break;
         }
     }
 
     @Override
     public ConsumeTaskResponse call() throws Exception {
-        ConsumeStatus status = ConsumeStatus.CONSUME_RETRY_LATER;
+        ConsumeStatus status;
         try {
 
             if (topicPartition.topic().equals(retryTopic)) {
@@ -114,10 +135,11 @@ public class ConcurrentConsumeTaskRequest<K> extends AbsConsumeTaskRequest<K> {
             }
             processConsumeStatus(status);
         } catch (Throwable t) {
-            logger.warn("user callback exec failed. due to ", t);
+            logger.warn("[ConcurrentConsumeTaskRequest] callback execute failed. due to ", t);
+            return ConsumeTaskResponse.TASK_EXEC_FAILURE;
         }
 
-        return null;
+        return ConsumeTaskResponse.TASK_EXEC_SUCCESS;
     }
 
     private void updateMessageAttrBeforeRetrySendback(ExtMessage<K> msg, int delayedLevel) {

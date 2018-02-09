@@ -4,6 +4,7 @@ import org.apache.kafka.clients.consumer.ConsumerRebalanceListener;
 import org.apache.kafka.clients.consumer.OffsetAndMetadata;
 import org.apache.kafka.clients.consumer.OffsetAndTimestamp;
 import org.apache.kafka.clients.enhance.ExtMessage;
+import org.apache.kafka.clients.enhance.Utility;
 import org.apache.kafka.clients.enhance.exception.ConsumeOffsetException;
 import org.apache.kafka.common.TopicPartition;
 import org.apache.kafka.common.utils.Utils;
@@ -32,7 +33,6 @@ public abstract class AbsOffsetStorage<K> implements ConsumerRebalanceListener {
     public static final OffsetAndMetadata INVILID_OFFSET_META = new OffsetAndMetadata(INVALID_OFFSET_VALUE);
     protected final Map<TopicPartition, OffsetAndMetadata> commitedOffsetSnapshot = new HashMap<>();
     protected Object lock = new Object();
-    private boolean loadFromStorage;
 
     protected final LoadOffsetType loadType;
     protected final ConsumerWithAdmin<K> safeConsumer;
@@ -52,9 +52,7 @@ public abstract class AbsOffsetStorage<K> implements ConsumerRebalanceListener {
 
     public void start() {
         synchronized (lock) {
-            if (!loadFromStorage) {
-                loadFromStorage = load();
-            }
+            load();
             storeTimer.scheduleAtFixedRate(offsetStoreTask, clientContext.offsetStoreIntervals(),
                     clientContext.offsetStoreIntervals());
         }
@@ -63,7 +61,6 @@ public abstract class AbsOffsetStorage<K> implements ConsumerRebalanceListener {
     public void shutdown() {
         synchronized (lock) {
             storeAllOffsetMeta();
-            loadFromStorage = false;
             commitedOffsetSnapshot.clear();
             storeTimer.cancel();
         }
@@ -125,6 +122,12 @@ public abstract class AbsOffsetStorage<K> implements ConsumerRebalanceListener {
         return false;
     }
 
+    public void clearOffset() {
+        synchronized (lock) {
+            commitedOffsetSnapshot.clear();
+        }
+    }
+
     public OffsetAndMetadata removeOffset(TopicPartition tp) {
         OffsetAndMetadata result = null;
         synchronized (lock) {
@@ -175,8 +178,7 @@ public abstract class AbsOffsetStorage<K> implements ConsumerRebalanceListener {
         }
 
         //first start
-        if (LoadOffsetType.LOAD_FROM_LOCAL_FILE == loadType && loadFromStorage
-                && RESET_FROM_TIMESTAMP != strategy) {
+        if (LoadOffsetType.LOAD_FROM_LOCAL_FILE == loadType && RESET_FROM_TIMESTAMP != strategy) {
             synchronized (lock) {
                 for (TopicPartition tp : partitions) {
                     if (commitedOffsetSnapshot.containsKey(tp)) {
@@ -190,7 +192,6 @@ public abstract class AbsOffsetStorage<K> implements ConsumerRebalanceListener {
                         }
                     }// new assigned partition will be joined when latestNeedAckOffsets() invoked.
                 }
-                loadFromStorage = false;
             }
         }
 
@@ -229,7 +230,7 @@ public abstract class AbsOffsetStorage<K> implements ConsumerRebalanceListener {
 
     protected String localOffsetFileName() {
         return Utils.join(Arrays.asList(System.getProperty("user.home"), safeConsumer.groupId(),
-                safeConsumer.clientId(), LOCAL_OFFSETS_STORE_NAME), File.separator);
+                safeConsumer.clientId(), Utility.getLocalAddress(), LOCAL_OFFSETS_STORE_NAME), File.separator);
     }
 
     protected String localOffsetBkFileName() {

@@ -1,4 +1,6 @@
 package org.apache.kafka.clients.enhance.consumer;
 
-public class ConsumeTaskResponse {
+public enum ConsumeTaskResponse {
+    TASK_EXEC_SUCCESS,
+    TASK_EXEC_FAILURE
 }

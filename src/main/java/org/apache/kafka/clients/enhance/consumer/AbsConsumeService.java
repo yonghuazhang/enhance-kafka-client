@@ -5,6 +5,7 @@ import org.apache.kafka.clients.consumer.OffsetAndTimestamp;
 import org.apache.kafka.clients.enhance.ClientThreadFactory;
 import org.apache.kafka.clients.enhance.ExtMessage;
 import org.apache.kafka.clients.enhance.ShutdownableThread;
+import org.apache.kafka.clients.enhance.Utility;
 import org.apache.kafka.clients.enhance.exception.KafkaConsumeException;
 import org.apache.kafka.clients.producer.KafkaProducer;
 import org.apache.kafka.clients.producer.ProducerRecord;
@@ -214,6 +215,7 @@ public abstract class AbsConsumeService<K> implements ConsumeService<K> {
             try {
                 safeConsumer.seek(partition, offset);
                 partitionDataManager.resetPartitionData(partition);
+                offsetPersistor.removeOffset(partition);
             } catch (Exception ex) {
                 logger.warn("seek offset error. due to ", ex);
             } finally {
@@ -240,6 +242,7 @@ public abstract class AbsConsumeService<K> implements ConsumeService<K> {
                     safeConsumer.seek(entry.getKey(), entry.getValue().offset());
                 }
                 partitionDataManager.resetAllPartitionData();
+                offsetPersistor.clearOffset();
 
             } catch (Exception ex) {
                 logger.warn("seekToTime error. due to ", ex);
@@ -258,6 +261,7 @@ public abstract class AbsConsumeService<K> implements ConsumeService<K> {
             try {
                 safeConsumer.seekToBeginning(filterAssignedRetryTopic(safeConsumer.assignment()));
                 partitionDataManager.resetAllPartitionData();
+                offsetPersistor.clearOffset();
             } catch (Exception ex) {
                 logger.warn("seekToBeginning error. due to ", ex);
             } finally {
@@ -275,6 +279,7 @@ public abstract class AbsConsumeService<K> implements ConsumeService<K> {
             try {
                 safeConsumer.seekToEnd(filterAssignedRetryTopic(safeConsumer.assignment()));
                 partitionDataManager.resetAllPartitionData();
+                offsetPersistor.clearOffset();
             } catch (Exception ex) {
                 logger.warn("seekToEnd error. due to ", ex);
             } finally {
@@ -316,26 +321,12 @@ public abstract class AbsConsumeService<K> implements ConsumeService<K> {
 
     @Override
     public void suspend() {
-        syncLock.lock();
-        try {
-            safeConsumer.pause(safeConsumer.assignment());
-        } catch (Exception ex) {
-            logger.warn("suspend consumer service error. due to ", ex);
-        } finally {
-            syncLock.unlock();
-        }
+        pollService.stopPollMessage();
     }
 
     @Override
     public void resume() {
-        syncLock.lock();
-        try {
-            safeConsumer.resume(safeConsumer.assignment());
-        } catch (Exception ex) {
-            logger.warn("resume consumer service error. due to ", ex);
-        } finally {
-            syncLock.unlock();
-        }
+        pollService.resumePollMessage();
     }
 
     public void dispatchTaskLater(final AbsConsumeTaskRequest<K> requestTask, final long timeout, final TimeUnit unit) {
@@ -352,11 +343,8 @@ public abstract class AbsConsumeService<K> implements ConsumeService<K> {
                 }
             }, timeout, unit);
         } catch (Throwable t) {
-            logger.warn("dispatchTaskLater submit task failed.", t);
-            try {
-                TimeUnit.MILLISECONDS.sleep(unit.toMillis(timeout));
-            } catch (InterruptedException e) {
-            }
+            logger.warn("dispatchTaskLater() failed.", t);
+            Utility.sleep(unit.toMillis(timeout));
             dispatchTaskLater(requestTask, timeout, unit);
         }
     }

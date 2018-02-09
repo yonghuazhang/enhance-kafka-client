@@ -3,7 +3,6 @@ package org.apache.kafka.clients.enhance.consumer;
 import org.apache.kafka.clients.consumer.ConsumerRecord;
 import org.apache.kafka.clients.enhance.ExtMessage;
 import org.apache.kafka.clients.enhance.ExtMessageDef;
-import org.apache.kafka.clients.enhance.ExtMessageUtils;
 import org.apache.kafka.clients.enhance.ShutdownableThread;
 import org.apache.kafka.clients.enhance.Utility;
 import org.apache.kafka.clients.enhance.consumer.listener.ConcurrentMessageHandler;
@@ -23,11 +22,6 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
 
-import static org.apache.kafka.clients.enhance.ExtMessageDef.PROPERTY_REAL_OFFSET;
-import static org.apache.kafka.clients.enhance.ExtMessageDef.PROPERTY_REAL_PARTITION_ID;
-import static org.apache.kafka.clients.enhance.ExtMessageDef.PROPERTY_REAL_STORE_TIME;
-import static org.apache.kafka.clients.enhance.ExtMessageDef.PROPERTY_REAL_TOPIC;
-
 /**
  * Created by steven03.zhang on 2017/12/13.
  */
@@ -43,7 +37,14 @@ public class ConcurrentConsumeService<K> extends AbsConsumeService<K> {
     public ConcurrentConsumeService(ConsumerWithAdmin<K> safeConsumer, KafkaProducer<K, ExtMessage<K>> innerSender, ConsumeClientContext<K> clientContext) {
         super(safeConsumer, innerSender, clientContext);
         this.dispatchService = new ConcurrentDispatchMessageService("concurrent-dispatch-message-service-thread");
-        createRetryTopic();
+        switch (clientContext.consumeModel()) {
+            case GROUP_CLUSTERING:
+                createRetryTopic();
+                break;
+            case GROUP_BROADCASTING:
+            default:
+                break;
+        }
     }
 
 
@@ -68,7 +69,7 @@ public class ConcurrentConsumeService<K> extends AbsConsumeService<K> {
                             }
                             ConcurrentConsumeTaskRequest<K> requestTask = new ConcurrentConsumeTaskRequest<K>(ConcurrentConsumeService.this, partitionDataManager,
                                     messages, topicPartition, clientContext, (ConcurrentMessageHandler<K>) clientContext.messageHandler());
-                            logger.debug("dispatch consuming task at once. ===> " + messages);
+                            logger.debug("[ConcurrentDispatchMessageService] dispatch consuming task at once. messages = " + messages);
                             submitConsumeRequest(requestTask);
                             requestMap.put(requestTask.getRequestId(), requestTask);
                         }
@@ -102,15 +103,23 @@ public class ConcurrentConsumeService<K> extends AbsConsumeService<K> {
     @Override
     public void subscribe(Collection<String> topics) {
         List<String> subTopics = new ArrayList<>(topics);
-        subTopics.add(clientContext.retryTopicName());
+        switch (clientContext.consumeModel()) {
+            case GROUP_CLUSTERING:
+                subTopics.add(clientContext.retryTopicName());
+                break;
+            case GROUP_BROADCASTING:
+            default:
+                break;
+        }
         super.subscribe(subTopics);
     }
 
     @Override
     public void start() {
         try {
-            expiredTimer.scheduleAtFixedRate(new processExpiredTaskRequest(), clientContext.maxMessageDealTimeMs(), clientContext.maxMessageDealTimeMs());
             super.start();
+            expiredTimer.scheduleAtFixedRate(new processExpiredTaskRequest(), clientContext.maxMessageDealTimeMs(),
+                    clientContext.maxMessageDealTimeMs());
             logger.info("[ConcurrentConsumeService] start successfully.");
         } catch (Exception ex) {
             logger.warn("[ConcurrentConsumeService] service failed to start. due to ", ex);
@@ -153,9 +162,5 @@ public class ConcurrentConsumeService<K> extends AbsConsumeService<K> {
 
     boolean isTopicExists(String topic) {
         return safeConsumer.isTopicExists(topic);
-    }
-
-    boolean needDeadLetterTopic(ExtMessage<K> msg) {
-        return msg.getRetryCount() >= ExtMessageDef.MAX_RECONSUME_COUNT;
     }
 }

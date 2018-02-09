@@ -262,7 +262,7 @@ public class KafkaPushConsumer<K> implements ConsumeOperator<K> {
     }
 
     @Override
-    public void seekToTime(String dateString) {
+    public void seekToTime(String dateString) { // date string  format such as: "yyyy-MM-dd'T'HH:mm:ss.SSS"
         if (isRunning && null != consumeService) {
             try {
                 long timestamp = Utility.convertTimeByString(dateString);
