@@ -303,4 +303,18 @@ public class KafkaPushConsumer<K> implements ConsumeOperator<K> {
         this.clientContext.addConsumeHook(consumeHook);
     }
 
+    @Override
+    public void suspend() {
+        if (isRunning && null != consumeService) {
+
+        }
+    }
+
+    @Override
+    public void resume() {
+        if (isRunning && null != consumeService){
+
+        }
+    }
+
 }

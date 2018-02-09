@@ -35,7 +35,7 @@ public abstract class AbsConsumeService<K> implements ConsumeService<K> {
     private final ThreadPoolExecutor execTaskService;
     private final ArrayBlockingQueue<Runnable> taskQueue;
     private final ScheduledExecutorService scheduleExecTaskService;
-    protected final ClientThreadFactory clientThreadFactory = new ClientThreadFactory("consume-service-threadpool");
+    protected final ClientThreadFactory clientThreadFactory = new ClientThreadFactory("consume-service-thread-pool");
     protected final KafkaPollMessageService<K> pollService;
     protected ShutdownableThread dispatchService;
 
@@ -86,7 +86,7 @@ public abstract class AbsConsumeService<K> implements ConsumeService<K> {
 
     @Override
     public void start() {
-        logger.debug("AbsConsumeService start service.");
+        logger.debug("[AbsConsumeService] start service.");
         syncLock.lock();
         try {
             if (!isRunning) {
@@ -118,7 +118,7 @@ public abstract class AbsConsumeService<K> implements ConsumeService<K> {
 
     @Override
     public void shutdown(long timeout, TimeUnit unit) {
-        logger.debug("AbsConsumeService start closing service.");
+        logger.debug("[AbsConsumeService] start closing service.");
         syncLock.lock();
         try {
             if (isRunning) {
@@ -128,25 +128,25 @@ public abstract class AbsConsumeService<K> implements ConsumeService<K> {
 
                 this.taskQueue.clear();
                 if (0 >= timeout) {
-                    logger.debug("AbsConsumeService is isRunning at once.");
+                    logger.debug("[AbsConsumeService] is isRunning at once.");
                     this.execTaskService.shutdownNow();
                     this.scheduleExecTaskService.shutdownNow();
                 } else {
-                    logger.debug("AbsConsumeService awaitTermination for [{}] ms.", unit.toMillis(timeout));
+                    logger.debug("[AbsConsumeService] awaitTermination for [{}] ms.", unit.toMillis(timeout));
                     this.execTaskService.shutdown();
                     this.scheduleExecTaskService.shutdown();
                     try {
                         this.execTaskService.awaitTermination(timeout, unit);
                         this.scheduleExecTaskService.awaitTermination(timeout, unit);
                     } catch (InterruptedException e) {
-                        logger.warn("AbsConsumeService interrupted exception. due to ", e);
+                        logger.warn("[AbsConsumeService] interrupted exception. due to ", e);
                     }
                 }
 
                 offsetPersistor.shutdown();
             }
         } catch (Throwable e) {
-            logger.warn("AbsConsumeService close error. due to ", e);
+            logger.warn("[AbsConsumeService] close error. due to ", e);
         } finally {
             syncLock.unlock();
         }
@@ -157,7 +157,7 @@ public abstract class AbsConsumeService<K> implements ConsumeService<K> {
         try {
             execTaskService.setCorePoolSize(coreThreadNum);
         } catch (IllegalArgumentException e) {
-            logger.warn("update consuming threadpool coreThread error. due to ", e);
+            logger.warn("[AbsConsumeService] update consuming thread-pool coreThread error. due to ", e);
         }
     }
 
@@ -176,7 +176,7 @@ public abstract class AbsConsumeService<K> implements ConsumeService<K> {
         try {
             dispatchTaskAtOnce(requestTask);
         } catch (RejectedExecutionException e) {
-            logger.warn("task is too much. and wait 3s and dispatch again.");
+            logger.warn("[AbsConsumeService-submitConsumeRequest] task is too much. and wait 3s and dispatch again.");
             dispatchTaskLater(requestTask, clientContext.clientRetryBackoffMs(), TimeUnit.MILLISECONDS);
         }
     }
@@ -314,6 +314,30 @@ public abstract class AbsConsumeService<K> implements ConsumeService<K> {
         }
     }
 
+    @Override
+    public void suspend() {
+        syncLock.lock();
+        try {
+            safeConsumer.pause(safeConsumer.assignment());
+        } catch (Exception ex) {
+            logger.warn("suspend consumer service error. due to ", ex);
+        } finally {
+            syncLock.unlock();
+        }
+    }
+
+    @Override
+    public void resume() {
+        syncLock.lock();
+        try {
+            safeConsumer.resume(safeConsumer.assignment());
+        } catch (Exception ex) {
+            logger.warn("resume consumer service error. due to ", ex);
+        } finally {
+            syncLock.unlock();
+        }
+    }
+
     public void dispatchTaskLater(final AbsConsumeTaskRequest<K> requestTask, final long timeout, final TimeUnit unit) {
         try {
             scheduleExecTaskService.schedule(new Runnable() {
@@ -322,7 +346,7 @@ public abstract class AbsConsumeService<K> implements ConsumeService<K> {
                     try {
                         dispatchTaskAtOnce(requestTask);
                     } catch (Exception ex1) {
-                        logger.warn("exec dispatchTaskAtOnce() failed, for queue is full. invoke dispatchTaskLater().", ex1);
+                        logger.warn("dispatchTaskAtOnce() failed, because partition is full. invoke dispatchTaskLater().", ex1);
                         dispatchTaskLater(requestTask, timeout, unit);
                     }
                 }

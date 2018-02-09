@@ -57,4 +57,8 @@ public interface ConsumeOperator<K> {
 
     void addConsumeHook(ConsumeMessageHook consumeHook);
 
+    void suspend();
+
+    void resume();
+
 }

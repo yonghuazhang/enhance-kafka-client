@@ -103,6 +103,7 @@ public class PartitionData<K, V> {
                 if (isWinFull(1)) {
                     boolean awaitOk = winFullLock.await(SLIDING_WINDOWS_FULL_AWAIT_TIMOUT_MS, TimeUnit.MILLISECONDS);
                     if (!awaitOk) {
+                        logger.debug("[PartitionData-putRecords] sliding window is full and wait lock timeout, current record offset is [{}].", record.offset());
                         throw new PartitionDataFullException("put message await lock timeout.", fromIdx);
                     }
                 }
@@ -202,7 +203,7 @@ public class PartitionData<K, V> {
             List<ConsumerRecord<K, V>> results = new ArrayList<>(batchSize);
             if (INVALID_OFFSET_VALUE == takeCursor.get()) {
                 takeCursor.set(getMinOffset());
-                logger.debug("############ reset takeCursor value " + takeCursor.get());
+                logger.debug("[PartitionData-takeRecords] ===> reset takeCursor value " + takeCursor.get());
             }
             int num = 0;
             long cur = takeCursor.get();
@@ -211,9 +212,9 @@ public class PartitionData<K, V> {
                 try {
                     if (slidingWindow.containsKey(cur)) {
                         results.add(slidingWindow.get(cur));
-                        logger.debug("############ offset exists " + cur);
+                        logger.debug("[PartitionData-takeRecords] ===> offset [{}] exists in window.", cur);
                     } else {
-                        logger.debug("############ offset not exists" + cur);
+                        logger.warn("[PartitionData-takeRecords] ===> offset [{}] not exists in window.", cur);
                     }
                 } finally {
                     rLock.unlock();
@@ -221,8 +222,9 @@ public class PartitionData<K, V> {
             }
 
             takeCursor.set(cur);
-            logger.debug("[takeRecords] tp = " + tp + "\t takeCursor=" +
-                    takeCursor.get() + "\t pMaxOffset = " + pMaxOffset.get() + "\t lastAckOffset=" + lastAckOffset.get());
+            logger.debug("[PartitionData-takeRecords] tp = " + tp + "\t takeCursor=" +
+                    takeCursor.get() + "\t pMaxOffset = " + pMaxOffset.get() +
+                    "\t lastAckOffset=" + lastAckOffset.get());
             accTakeMessageNum.addAndGet(num);
             return results;
         }
@@ -274,28 +276,28 @@ public class PartitionData<K, V> {
     }
 
     public void clear() {
+        wLock.lock();
         try {
-            wLock.lockInterruptibly();
-            try {
-                isValid = false;
-                slidingWindow.clear();
-                slidingWindowSize.set(0);
-                accTakeMessageNum.set(0L);
+            isValid = false;
+            slidingWindow.clear();
+            slidingWindowSize.set(0);
+            accTakeMessageNum.set(0L);
 
-                takeCursor.set(INVALID_OFFSET_VALUE);
-                pMaxOffset.set(INVALID_OFFSET_VALUE);
-                lastAckOffset.set(INVALID_OFFSET_VALUE);
-            } finally {
-                wLock.unlock();
-            }
-        } catch (Exception ex) {
-            logger.warn("clear is interrupted.");
+            takeCursor.set(INVALID_OFFSET_VALUE);
+            pMaxOffset.set(INVALID_OFFSET_VALUE);
+            lastAckOffset.set(INVALID_OFFSET_VALUE);
+        } finally {
+            wLock.unlock();
         }
-
     }
 
     public void resetPartition() {
-        clear();
-        isValid = true;
+        wLock.lock();
+        try {
+            clear();
+            isValid = true;
+        } finally {
+            wLock.unlock();
+        }
     }
 }

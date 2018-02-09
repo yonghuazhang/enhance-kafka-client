@@ -39,6 +39,7 @@ public class ExtMessage<K> {
     public static <K> ExtMessage<K> parseFromRetryMessage(ExtMessage<K> retryMessage) {
         if (retryMessage.getRetryCount() > 0) {
             ExtMessage<K> newMessage = new ExtMessage<>();
+            newMessage.msgKey = retryMessage.msgKey;
             newMessage.setTopic(retryMessage.getProperty(PROPERTY_REAL_TOPIC));
             newMessage.setPartion(Integer.parseInt(retryMessage.getProperty(PROPERTY_REAL_PARTITION_ID)));
             newMessage.setOffset(Long.parseLong(retryMessage.getProperty(PROPERTY_REAL_OFFSET)));
@@ -221,7 +222,7 @@ public class ExtMessage<K> {
         return body;
     }
 
-    public void setBody(byte[] body) {
+    void setBody(byte[] body) {
         this.body = null == body ? new byte[0] : body;
     }
 

@@ -77,15 +77,21 @@ public class OffsetFileStorage<K> extends AbsOffsetStorage<K> {
 
         if (Utility.fileExists(offsetFilePath)) {
             Utility.moveFile(offsetFilePath, offsetBkFilePath);
+        } else {
+            try {
+                Utility.createFile(offsetFilePath);
+            } catch (IOException e) {
+                logger.warn("create user offset store file failed. path = " + offsetFilePath);
+            }
         }
         BufferedOutputStream bf = null;
         try {
-            bf = new BufferedOutputStream(new FileOutputStream(offsetFilePath));
-            bf.write("topicName partitonId offset".getBytes());
+            bf = new BufferedOutputStream(new FileOutputStream(offsetFilePath, true));
+            bf.write("topicName partitonId offset\n".getBytes(StandardCharsets.UTF_8));
             synchronized (lock) {
                 for (TopicPartition tp : commitedOffsetSnapshot.keySet()) {
                     OffsetAndMetadata offsetMeta = commitedOffsetSnapshot.get(tp);
-                    bf.write(String.format("%s %d %ld", tp.topic(), tp.partition(), offsetMeta.offset()).getBytes());
+                    bf.write((tp.topic() + " " + tp.partition() + " " + offsetMeta.offset() + "\n").getBytes(StandardCharsets.UTF_8));
                 }
             }
         } catch (Exception e) {

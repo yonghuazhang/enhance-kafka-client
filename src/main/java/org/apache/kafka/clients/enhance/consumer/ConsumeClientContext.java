@@ -224,6 +224,7 @@ public final class ConsumeClientContext<K> {
                 logger.warn("Invalid property type: key = [{}], value = [{}].", key, originalConfig.get(key));
             }
         }
+        innerConsumeConfig.put(ConsumerConfig.ENABLE_AUTO_COMMIT_CONFIG, "false");
         updateContext();
     }
 

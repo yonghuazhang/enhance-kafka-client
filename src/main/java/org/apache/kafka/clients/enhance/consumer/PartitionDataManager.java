@@ -147,6 +147,7 @@ public class PartitionDataManager<K, V> {
                 return pd.takeRecords(batchSize);
             } catch (InterruptedException e) {
                 logger.warn("retrieveTaskRecords is interrupted.", e);
+                Thread.currentThread().interrupt();
             }
         }
         return Collections.emptyList();
@@ -159,6 +160,7 @@ public class PartitionDataManager<K, V> {
                 pd.removeRecord(offsets);
             } catch (InterruptedException e) {
                 logger.warn("commitSlidingWinOffset is interrupted.", e);
+                Thread.currentThread().interrupt();
             }
         }
     }

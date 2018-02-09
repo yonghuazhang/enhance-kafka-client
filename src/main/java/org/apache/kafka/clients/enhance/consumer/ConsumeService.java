@@ -46,4 +46,8 @@ public interface ConsumeService<K> {
 
     void unsubscribe();
 
+    void suspend();
+
+    void resume();
+
 }

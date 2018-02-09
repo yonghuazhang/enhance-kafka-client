@@ -47,7 +47,7 @@ public abstract class AbsOffsetStorage<K> implements ConsumerRebalanceListener {
         this.safeConsumer = safeConsumer;
         this.partitionDataManager = partitionDataManager;
         this.clientContext = clientContext;
-        this.loadFromStorage = load();
+        //this.loadFromStorage = load();
     }
 
     public void start() {
@@ -188,7 +188,7 @@ public abstract class AbsOffsetStorage<K> implements ConsumerRebalanceListener {
                                 logger.warn("[onPartitionsAssigned] load offsets from storage failed. due to", ex);
                             }
                         }
-                    } // new assigned partition will be joined when latestNeedAckOffsets() invoked.
+                    }// new assigned partition will be joined when latestNeedAckOffsets() invoked.
                 }
                 loadFromStorage = false;
             }

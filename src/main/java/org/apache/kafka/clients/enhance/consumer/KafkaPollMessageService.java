@@ -50,6 +50,7 @@ class KafkaPollMessageService<K> extends ShutdownableThread {
                 if (consumeServiceLock.tryLock(clientContext.pollMessageAwaitTimeoutMs(), TimeUnit.MILLISECONDS)) {
                     try {
                         ConsumerRecords<K, ExtMessage<K>> records = safeConsumer.poll(clientContext.pollMessageAwaitTimeoutMs());
+                        logger.trace("[KafkaPollMessageService] retrieve no messages [{}] and topic partition {}.", records.isEmpty(), records.partitions());
                         if (!records.isEmpty()) {
                             //filter messages
                             ConsumerRecords<K, ExtMessage<K>> filterMessages = filterMessage(records, clientContext.messageFilter());
@@ -79,6 +80,7 @@ class KafkaPollMessageService<K> extends ShutdownableThread {
                 }
             } catch (InterruptedException e) {
                 logger.warn("KafkaPollMessageService is interrupted.");
+                Thread.currentThread().interrupt();
             }
         }
     }

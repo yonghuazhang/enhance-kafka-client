@@ -37,6 +37,17 @@ public final class Utility {
         return Files.exists(new File(fileName).toPath());
     }
 
+    public static File createFile(String fileName) throws IOException {
+        File file = new File(fileName);
+        if (!file.exists()) {
+            if (!file.getParentFile().exists()) {
+                file.getParentFile().mkdirs();
+            }
+            file.createNewFile();
+        }
+        return file;
+    }
+
     public static boolean moveFile(String fromFn, String ToFn) {
         try {
             Path fromPath = (new File(fromFn)).toPath();
@@ -57,6 +68,7 @@ public final class Utility {
         try {
             TimeUnit.MILLISECONDS.sleep(durationMs);
         } catch (InterruptedException e) {
+            Thread.currentThread().interrupt();
         }
     }
 }
