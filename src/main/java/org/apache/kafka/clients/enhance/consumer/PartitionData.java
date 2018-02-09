@@ -125,8 +125,8 @@ public class PartitionData<K, V> {
         }
     }
 
-    public int removeRecord(long offset) throws InterruptedException {
-        wLock.lockInterruptibly();
+    public int removeRecord(long offset) {
+        wLock.lock();
         int removeCnt = 0;
         try {
             ConsumerRecord<K, V> oldRec = slidingWindow.remove(offset);
@@ -153,9 +153,9 @@ public class PartitionData<K, V> {
         }
     }
 
-    public int removeRecord(List<Long> offsets) throws InterruptedException {
+    public int removeRecord(List<Long> offsets) {
         if (null == offsets || offsets.isEmpty()) return 0;
-        wLock.lockInterruptibly();
+        wLock.lock();
         int removeCnt = 0;
         try {
             for (Long offset : offsets) {

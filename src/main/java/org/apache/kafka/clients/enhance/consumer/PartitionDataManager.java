@@ -162,23 +162,14 @@ public class PartitionDataManager<K, V> {
         if (null == tp || offsets.isEmpty()) return;
         PartitionData<K, V> pd = patitionDatas.get(tp);
         if (null != pd) {
-            try {
-                pd.removeRecord(offsets);
-            } catch (InterruptedException e) {
-                logger.warn("[PartitionDataManager] commitOffsets is interrupted.", e);
-                Thread.currentThread().interrupt();
-            }
+            pd.removeRecord(offsets);
         }
     }
 
     public void commitOffset(TopicPartition tp, long offset) {
         PartitionData<K, V> pd = patitionDatas.get(tp);
         if (null != pd && pd.isValid()) {
-            try {
-                pd.removeRecord(offset);
-            } catch (InterruptedException e) {
-                logger.warn("[PartitionDataManager] commitOffsets is interrupted.", e);
-            }
+            pd.removeRecord(offset);
         }
     }
 

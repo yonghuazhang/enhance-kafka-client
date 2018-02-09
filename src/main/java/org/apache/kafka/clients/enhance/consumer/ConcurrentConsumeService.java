@@ -67,8 +67,8 @@ public class ConcurrentConsumeService<K> extends AbsConsumeService<K> {
                             for (ConsumerRecord<K, ExtMessage<K>> record : records) {
                                 messages.add(record.value());
                             }
-                            ConcurrentConsumeTaskRequest<K> requestTask = new ConcurrentConsumeTaskRequest<K>(ConcurrentConsumeService.this, partitionDataManager,
-                                    messages, topicPartition, clientContext, (ConcurrentMessageHandler<K>) clientContext.messageHandler());
+                            ConcurrentConsumeTaskRequest<K> requestTask = new ConcurrentConsumeTaskRequest<>(ConcurrentConsumeService.this, partitionDataManager,
+                                    messages, topicPartition, clientContext);
                             logger.debug("[ConcurrentDispatchMessageService] dispatch consuming task at once. messages = " + messages);
                             submitConsumeRequest(requestTask);
                             requestMap.put(requestTask.getRequestId(), requestTask);
@@ -79,6 +79,11 @@ public class ConcurrentConsumeService<K> extends AbsConsumeService<K> {
                 }
             }
         }
+    }
+
+    ConcurrentConsumeTaskRequest<K> removeCompletedTask(long taskRequestId) {
+        logger.debug("[ConcurrentConsumeService] remove completed task [taskId = {}].", taskRequestId);
+        return requestMap.remove(taskRequestId);
     }
 
     class processExpiredTaskRequest extends TimerTask {

@@ -4,7 +4,6 @@ import org.apache.kafka.clients.enhance.ExtMessage;
 import org.apache.kafka.clients.enhance.consumer.listener.ConcurrentConsumeHandlerContext;
 import org.apache.kafka.clients.enhance.consumer.listener.ConcurrentMessageHandler;
 import org.apache.kafka.clients.enhance.consumer.listener.ConsumeStatus;
-import org.apache.kafka.common.TopicPartition;
 import org.junit.Before;
 import org.junit.Test;
 
@@ -33,7 +32,10 @@ public class KafkaPushConsumerTest {
         props.put("auto.commit.interval.ms", "1000");
 
         consumer = new KafkaPushConsumer<String>(props, String.class);
-        consumer.consumeSetting().consumeBatchSize(10).consumeModel(ConsumeModel.GROUP_CLUSTERING);
+        consumer.consumeSetting()
+                .consumeBatchSize(10)
+                .consumeModel(ConsumeModel.GROUP_CLUSTERING)
+                .maxMessageDealTimeMs(10, TimeUnit.SECONDS);
 
         final AtomicInteger total = new AtomicInteger(0);
         final Map<String, Integer> calc = new HashMap<>();
@@ -42,30 +44,30 @@ public class KafkaPushConsumerTest {
 
         consumer.registerHandler(new ConcurrentMessageHandler<String>() {
             @Override
-            public ConsumeStatus consumeMessage(List<ExtMessage<String>> message, ConcurrentConsumeHandlerContext consumeContext) {
+            public ConsumeStatus consumeMessage(List<ExtMessage<String>> message, ConcurrentConsumeHandlerContext consumeContext) throws InterruptedException {
 
                 /*System.out.println("message num=" + message.size() + "\t --->" + message.get(0).getRetryCount());
                 consumeContext.updateConsumeStatusInBatch(0, true);*/
 
-
-
+                int i = 0;
                 total.addAndGet(message.size());
-                synchronized (lock) {
-                    for (ExtMessage<String> rec : message) {
-                        System.out.println("message time=" + new Date(rec.getStoreTimeMs()));
-                        String key = rec.getMsgKey();
-                        if(calc.containsKey(key)) {
+                System.out.println("message count=" + message.size());
+                for (ExtMessage<String> rec : message) {
+                    System.out.println("message key=" + rec.getMsgKey() + " message time=" + new Date(rec.getStoreTimeMs()));
+                    String key = rec.getMsgKey();
+                    synchronized (lock) {
+                        if (calc.containsKey(key)) {
                             calc.put(key, calc.get(key).intValue() + 1);
                         } else {
                             calc.put(key, 1);
                         }
                     }
+                    consumeContext.updateConsumeStatusInBatch(i++, true);
+                    if (rec.getMsgKey().equals("5"))
+                        TimeUnit.MILLISECONDS.sleep(150000L);
+
                 }
-                try {
-                    TimeUnit.SECONDS.sleep(5);
-                } catch (InterruptedException e) {
-                    e.printStackTrace();
-                }
+
                 return ConsumeStatus.CONSUME_SUCCESS;
             }
         });
@@ -73,23 +75,23 @@ public class KafkaPushConsumerTest {
         consumer.subscribe("test");
         consumer.start();
         boolean seekOk = false;
-        while(true) {
+        while (true) {
             System.out.println("total====>\t" + total.get());
 
             TimeUnit.SECONDS.sleep(10);
 
-            for(int i = 0; i < 10; i++) {
-                if (i == 0) {
+            for (int i = 0; i < 10; i++) {
+               /* if (i == 0) {
                     consumer.seekToEnd();
-                } else if(i == 3 && !seekOk) {
+                } else if (i == 3 && !seekOk) {
                     consumer.seek(new TopicPartition("test", 0), 11318757);
                     seekOk = true;
-                } else if(i == 5) {
+                } else if (i == 5) {
                     //consumer.seekToTime("2018-02-08T12:00:00.000");
-                }
-                if (!calc.containsKey(String.valueOf(i))){
+                }*/
+                if (!calc.containsKey(String.valueOf(i))) {
                     System.out.println("lost ====> " + i);
-                } else if(calc.get(String.valueOf(i))> 1) {
+                } else if (calc.get(String.valueOf(i)) > 1) {
                     System.out.println("replicated ====> " + i + " times=" + calc.get(String.valueOf(i)));
                 }
             }

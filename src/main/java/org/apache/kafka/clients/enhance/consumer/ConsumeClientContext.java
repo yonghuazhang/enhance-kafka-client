@@ -84,7 +84,7 @@ public final class ConsumeClientContext<K> {
 
     public ConsumeClientContext maxMessageDealTimeMs(long dealTime, TimeUnit unit) {
         try {
-            clientRetryBackoffMs = unit.toMillis(dealTime);
+            maxMessageDealTimeMs = unit.toMillis(dealTime);
         } catch (Exception ex) {
             logger.warn("Setting maxMessageDealTimeMs time failed, use default value. due to ", ex);
         }

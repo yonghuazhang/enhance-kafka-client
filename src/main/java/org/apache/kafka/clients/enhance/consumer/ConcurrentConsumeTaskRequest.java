@@ -22,25 +22,29 @@ import static org.apache.kafka.clients.enhance.ExtMessageDef.PROPERTY_REAL_TOPIC
 
 public class ConcurrentConsumeTaskRequest<K> extends AbsConsumeTaskRequest<K> {
     private static final AtomicLong requestIdGenerator = new AtomicLong(0L);
+    private final long requestId = requestIdGenerator.incrementAndGet();
     private final ConcurrentConsumeHandlerContext handlerContext;
     private final ConcurrentMessageHandler<K> handler;
-    private final long requestId = requestIdGenerator.incrementAndGet();
     private final String retryTopic;
     private final String deadletterTopic;
 
     public ConcurrentConsumeTaskRequest(AbsConsumeService<K> service, PartitionDataManager manager,
                                         List<ExtMessage<K>> extMessages, TopicPartition topicPartition,
-                                        ConsumeClientContext<K> clientContext, ConcurrentMessageHandler<K> handler) {
+                                        ConsumeClientContext<K> clientContext) {
         super(service, manager, extMessages, topicPartition, clientContext);
         long firstOffsetInBatch = messages.get(FIRST_MESSAGE_IDX).getOffset();
         this.handlerContext = new ConcurrentConsumeHandlerContext(topicPartition, firstOffsetInBatch, clientContext.consumeBatchSize());
-        this.handler = handler;
+        this.handler = (ConcurrentMessageHandler<K>) clientContext.messageHandler();
         this.retryTopic = clientContext.retryTopicName();
         this.deadletterTopic = clientContext.deadLetterTopicName();
     }
 
     public long getRequestId() {
         return requestId;
+    }
+
+    private ConcurrentConsumeService<K> getConsumeService() {
+        return (ConcurrentConsumeService<K>) this.consumeService;
     }
 
     @Override
@@ -96,7 +100,7 @@ public class ConcurrentConsumeTaskRequest<K> extends AbsConsumeTaskRequest<K> {
                 if (!localRetryRecords.isEmpty()) {
                     logger.trace("need local retry message list:" + Arrays.toString(localRetryRecords.toArray(new Object[0])));
                     consumeService.dispatchTaskLater(new ConcurrentConsumeTaskRequest<>(consumeService, manager, localRetryRecords,
-                            topicPartition, clientContext, handler), DelayedMessageTopic.SYS_DELAYED_TOPIC_5S.getDurationMs(), TimeUnit.MILLISECONDS);
+                            topicPartition, clientContext), DelayedMessageTopic.SYS_DELAYED_TOPIC_5S.getDurationMs(), TimeUnit.MILLISECONDS);
                 }
 
                 for (ExtMessage<K> message : messages) {
@@ -118,25 +122,31 @@ public class ConcurrentConsumeTaskRequest<K> extends AbsConsumeTaskRequest<K> {
                 break;
             default:
                 logger.warn("unknown ConsumeStatus. offset = " + offsets);
+                manager.commitOffsets(topicPartition, offsets);
                 break;
         }
+        getConsumeService().removeCompletedTask(requestId);
     }
 
     @Override
     public ConsumeTaskResponse call() throws Exception {
-        ConsumeStatus status;
+        ConsumeStatus status = ConsumeStatus.CONSUME_RETRY_LATER;
         try {
-
             if (topicPartition.topic().equals(retryTopic)) {
-                List<ExtMessage<K>> newMessages = getMessageFromRetryPartition(this.messages);
+                List<ExtMessage<K>> newMessages = fetchMessagesFromRetryPartition(this.messages);
                 status = handler.consumeMessage(newMessages, this.handlerContext);
             } else {
                 status = handler.consumeMessage(this.messages, this.handlerContext);
             }
-            processConsumeStatus(status);
         } catch (Throwable t) {
-            logger.warn("[ConcurrentConsumeTaskRequest] callback execute failed. due to ", t);
+            if (t instanceof InterruptedException) {
+                logger.info("[ConcurrentConsumeTaskRequest] callback exec too long(>{}ms), interrupted the task.", clientContext.maxMessageDealTimeMs());
+            } else {
+                logger.warn("[ConcurrentConsumeTaskRequest] callback execute failed. due to ", t);
+            }
             return ConsumeTaskResponse.TASK_EXEC_FAILURE;
+        } finally {
+            processConsumeStatus(status);
         }
 
         return ConsumeTaskResponse.TASK_EXEC_SUCCESS;
@@ -154,7 +164,7 @@ public class ConcurrentConsumeTaskRequest<K> extends AbsConsumeTaskRequest<K> {
         ExtMessageUtils.setDelayedLevel(msg, delayedLevel);
     }
 
-    private List<ExtMessage<K>> getMessageFromRetryPartition(List<ExtMessage<K>> messagesFromRetryPartition) {
+    private List<ExtMessage<K>> fetchMessagesFromRetryPartition(List<ExtMessage<K>> messagesFromRetryPartition) {
         List<ExtMessage<K>> newMessages = new ArrayList<>(messagesFromRetryPartition.size());
         for (ExtMessage<K> message : messagesFromRetryPartition) {
             ExtMessage<K> newMessage = ExtMessage.parseFromRetryMessage(message);
