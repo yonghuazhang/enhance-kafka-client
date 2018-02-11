@@ -19,9 +19,6 @@ import java.util.Set;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.locks.ReentrantLock;
 
-/**
- * Created by steven03.zhang on 2018/2/1.
- */
 class KafkaPollMessageService<K> extends ShutdownableThread {
     private final static Logger logger = LoggerFactory.getLogger(KafkaPollMessageService.class);
 

@@ -11,9 +11,6 @@ import java.util.Collections;
 import java.util.HashSet;
 import java.util.Set;
 
-/**
- * Created by steven03.zhang on 2018/1/21.
- */
 public class ExtMessageDef {
     private static final Logger logger = LoggerFactory.getLogger(ExtMessageDef.class);
 

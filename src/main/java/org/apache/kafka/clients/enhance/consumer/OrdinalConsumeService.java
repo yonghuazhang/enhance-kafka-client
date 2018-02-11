@@ -3,9 +3,6 @@ package org.apache.kafka.clients.enhance.consumer;
 import org.apache.kafka.clients.enhance.ExtMessage;
 import org.apache.kafka.clients.producer.KafkaProducer;
 
-/**
- * Created by steven03.zhang on 2018/2/7.
- */
 public class OrdinalConsumeService<K> extends AbsConsumeService<K> {
 
 

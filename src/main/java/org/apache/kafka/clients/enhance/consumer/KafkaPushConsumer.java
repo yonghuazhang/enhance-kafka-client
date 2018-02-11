@@ -24,9 +24,6 @@ import java.util.Set;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.locks.ReentrantLock;
 
-/**
- * Created by steven03.zhang on 2018/1/17.
- */
 public class KafkaPushConsumer<K> implements ConsumeOperator<K> {
     private static final Logger logger = LoggerFactory.getLogger(KafkaPushConsumer.class);
     private static final long DEFAULT_CLOSE_TIMEOUT_MS = 30 * 1000;

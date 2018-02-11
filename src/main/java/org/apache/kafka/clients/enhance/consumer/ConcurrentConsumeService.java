@@ -20,9 +20,6 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
 
-/**
- * Created by steven03.zhang on 2018/1/13.
- */
 public class ConcurrentConsumeService<K> extends AbsConsumeService<K> {
     private static final Logger logger = LoggerFactory.getLogger(ConcurrentConsumeService.class);
 

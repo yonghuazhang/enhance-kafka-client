@@ -7,9 +7,6 @@ import org.apache.kafka.common.TopicPartition;
 import java.util.List;
 import java.util.Map;
 
-/**
- * Created by steven03.zhang on 2018/12/29.
- */
 public interface AdminOperator<K> {
 
     /**

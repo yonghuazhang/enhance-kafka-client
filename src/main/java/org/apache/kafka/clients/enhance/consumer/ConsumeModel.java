@@ -2,9 +2,6 @@ package org.apache.kafka.clients.enhance.consumer;
 
 import java.util.NoSuchElementException;
 
-/**
- * Created by steven03.zhang on 2018/1/6.
- */
 public enum ConsumeModel {
     GROUP_NULL_MODEL(-1, "NullModel"),
     GROUP_CLUSTERING(0, "Clustering"),

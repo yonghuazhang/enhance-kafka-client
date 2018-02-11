@@ -3,9 +3,6 @@ package org.apache.kafka.clients.enhance.consumer.listener;
 import org.apache.kafka.clients.enhance.ExtMessageDef;
 import org.apache.kafka.common.TopicPartition;
 
-/**
- * Created by steven03.zhang on 2018/1/22.
- */
 public class ConcurrentConsumeHandlerContext extends AbsConsumeHandlerContext {
 
     private int delayLevelAtReconsume = Integer.MIN_VALUE;

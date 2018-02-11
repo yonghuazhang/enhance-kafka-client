@@ -2,9 +2,6 @@ package org.apache.kafka.clients.enhance.consumer.listener;
 
 import org.apache.kafka.common.TopicPartition;
 
-/**
- * Created by steven03.zhang on 2018/1/14.
- */
 public class OrdinalConsumeHandlerContext extends AbsConsumeHandlerContext {
 
     private boolean autoCommit;

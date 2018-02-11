@@ -2,9 +2,6 @@ package org.apache.kafka.clients.enhance.exception;
 
 import org.apache.kafka.common.KafkaException;
 
-/**
- * Created by steven03.zhang on 2018/1/29.
- */
 public class KafkaAdminException extends KafkaException {
     private static final long serialVersionUID = 1L;
 

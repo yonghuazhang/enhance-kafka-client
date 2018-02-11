@@ -1,8 +1,5 @@
 package org.apache.kafka.clients.enhance.exception;
 
-/**
- * Created by steven03.zhang on 2018/1/29.
- */
 public class PartitionDataFullException extends Exception {
     final int fromIdx;
 

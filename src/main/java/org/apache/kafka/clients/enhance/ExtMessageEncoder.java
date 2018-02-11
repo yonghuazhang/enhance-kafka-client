@@ -23,9 +23,6 @@ import static org.apache.kafka.clients.enhance.ExtMessageDef.EXT_MESSAGE_DELAY_L
 import static org.apache.kafka.clients.enhance.ExtMessageDef.EXT_MESSAGE_RETRY_COUNT_FIELD;
 
 
-/**
- * Created by steven03.zhang on 2018/1/12.
- */
 public class ExtMessageEncoder<K> implements Serializer<ExtMessage<K>>, Deserializer<ExtMessage<K>> {
     private static final Logger logger = LoggerFactory.getLogger(ExtMessageEncoder.class);
     private final static Schema EXT_MESSAGE_SCHEMA = new Schema(new Field(EXT_MESSAGE_RETRY_COUNT_FIELD, Type.INT8),

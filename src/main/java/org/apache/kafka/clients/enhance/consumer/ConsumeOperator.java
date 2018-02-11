@@ -9,9 +9,6 @@ import java.util.Collection;
 import java.util.Set;
 import java.util.concurrent.TimeUnit;
 
-/**
- * Created by steven03.zhang on 2018/1/13.
- */
 public interface ConsumeOperator<K> {
 
     String groupId();

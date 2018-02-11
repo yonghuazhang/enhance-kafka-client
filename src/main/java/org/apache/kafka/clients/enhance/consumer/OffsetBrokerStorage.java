@@ -6,9 +6,6 @@ import org.apache.kafka.common.TopicPartition;
 
 import java.util.Map;
 
-/**
- * Created by steven03.zhang on 2018/2/5.
- */
 public class OffsetBrokerStorage<K> extends AbsOffsetStorage<K> {
 
 
