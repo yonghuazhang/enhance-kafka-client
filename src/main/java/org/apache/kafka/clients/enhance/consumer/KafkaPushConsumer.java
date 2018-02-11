@@ -25,7 +25,7 @@ import java.util.concurrent.TimeUnit;
 import java.util.concurrent.locks.ReentrantLock;
 
 /**
- * Created by steven03.zhang on 2017/1/17.
+ * Created by steven03.zhang on 2018/1/17.
  */
 public class KafkaPushConsumer<K> implements ConsumeOperator<K> {
     private static final Logger logger = LoggerFactory.getLogger(KafkaPushConsumer.class);
@@ -33,7 +33,7 @@ public class KafkaPushConsumer<K> implements ConsumeOperator<K> {
     private final ConsumeClientContext<K> clientContext = new ConsumeClientContext<>();
 
     private KafkaProducer<K, ExtMessage<K>> innerSender;
-    private ConsumerWithAdmin<K> safeConsumer;
+    private EnhanceConsumer<K> safeConsumer;
     private ConsumeService<K> consumeService;
 
     private final ReentrantLock lock = new ReentrantLock();
@@ -204,7 +204,7 @@ public class KafkaPushConsumer<K> implements ConsumeOperator<K> {
                 if (null == clientContext.messageHandler()) {
                     throw new KafkaConsumeException("Message handler couldn't be null, please reset it and restart.");
                 }
-                safeConsumer = new ConsumerWithAdmin<>(clientContext.getInternalConsumerProps(),
+                safeConsumer = new EnhanceConsumer<>(clientContext.getInternalConsumerProps(),
                         clientContext.keyDeserializer());
                 innerSender = new KafkaProducer<>(clientContext.getInternalProducerProps(), clientContext.keySerializer(), new ExtMessageEncoder<K>());
 

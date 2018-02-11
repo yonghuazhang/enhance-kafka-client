@@ -4,7 +4,7 @@ import org.apache.kafka.clients.enhance.ExtMessageDef;
 import org.apache.kafka.common.TopicPartition;
 
 /**
- * Created by steven03.zhang on 2017/12/14.
+ * Created by steven03.zhang on 2018/1/22.
  */
 public class ConcurrentConsumeHandlerContext extends AbsConsumeHandlerContext {
 

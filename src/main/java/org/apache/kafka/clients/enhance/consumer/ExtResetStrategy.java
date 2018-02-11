@@ -8,7 +8,7 @@ import java.text.ParseException;
 import static org.apache.kafka.clients.enhance.Utility.INVALID_TIMESTAMP;
 
 /**
- * Created by steven03.zhang on 2017/12/13.
+ * Created by steven03.zhang on 2018/1/13.
  */
 public enum ExtResetStrategy {
     RESET_FROM_EARLIEST(OffsetResetStrategy.EARLIEST, "earliest", INVALID_TIMESTAMP),

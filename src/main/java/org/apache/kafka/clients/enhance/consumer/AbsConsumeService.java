@@ -11,7 +11,6 @@ import org.apache.kafka.clients.producer.KafkaProducer;
 import org.apache.kafka.clients.producer.ProducerRecord;
 import org.apache.kafka.clients.producer.RecordMetadata;
 import org.apache.kafka.common.TopicPartition;
-import org.apache.kafka.common.internals.Topic;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -43,14 +42,14 @@ public abstract class AbsConsumeService<K> implements ConsumeService<K> {
     protected final ReentrantLock syncLock = new ReentrantLock(true);
 
     protected final AbsOffsetStorage offsetPersistor;
-    protected final ConsumerWithAdmin<K> safeConsumer;
+    protected final EnhanceConsumer<K> safeConsumer;
     protected final KafkaProducer<K, ExtMessage<K>> innerSender;
     protected final PartitionDataManager<K, ExtMessage<K>> partitionDataManager;
 
     protected final ConsumeClientContext<K> clientContext;
     protected volatile boolean isRunning = false;
 
-    public AbsConsumeService(final ConsumerWithAdmin<K> safeConsumer,
+    public AbsConsumeService(final EnhanceConsumer<K> safeConsumer,
                              final KafkaProducer<K, ExtMessage<K>> innerSender,
                              final ConsumeClientContext<K> clientContext) {
         this.safeConsumer = safeConsumer;

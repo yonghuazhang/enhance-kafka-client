@@ -12,7 +12,7 @@ import java.util.HashSet;
 import java.util.Set;
 
 /**
- * Created by steven03.zhang on 2017/12/11.
+ * Created by steven03.zhang on 2018/1/21.
  */
 public class ExtMessageDef {
     private static final Logger logger = LoggerFactory.getLogger(ExtMessageDef.class);

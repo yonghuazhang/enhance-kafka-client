@@ -3,7 +3,7 @@ package org.apache.kafka.clients.enhance.exception;
 import org.apache.kafka.common.errors.ApiException;
 
 /**
- * Created by steven03.zhang on 2017/12/13.
+ * Created by steven03.zhang on 2018/1/13.
  */
 public class ConsumeOffsetException extends ApiException {
     public ConsumeOffsetException(String message, Throwable cause) {

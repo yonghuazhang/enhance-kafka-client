@@ -20,12 +20,12 @@ import java.util.concurrent.TimeUnit;
 import java.util.concurrent.locks.ReentrantLock;
 
 /**
- * Created by steven03.zhang on 2017/12/13.
+ * Created by steven03.zhang on 2018/2/1.
  */
 class KafkaPollMessageService<K> extends ShutdownableThread {
     private final static Logger logger = LoggerFactory.getLogger(KafkaPollMessageService.class);
 
-    private final ConsumerWithAdmin<K> safeConsumer;
+    private final EnhanceConsumer<K> safeConsumer;
     private final PartitionDataManager<K, ExtMessage<K>> partitionDataManager;
     private final ConsumeClientContext<K> clientContext;
     private final ReentrantLock consumeServiceLock;
@@ -33,7 +33,7 @@ class KafkaPollMessageService<K> extends ShutdownableThread {
     private volatile boolean isRunning;
     private volatile boolean isSuspend = false;
 
-    public KafkaPollMessageService(String serviceName, ConsumerWithAdmin<K> safeConsumer,
+    public KafkaPollMessageService(String serviceName, EnhanceConsumer<K> safeConsumer,
                                    PartitionDataManager<K, ExtMessage<K>> partitionDataManager,
                                    ConsumeClientContext<K> clientContext, ReentrantLock consumeServiceLock) {
         super(serviceName);

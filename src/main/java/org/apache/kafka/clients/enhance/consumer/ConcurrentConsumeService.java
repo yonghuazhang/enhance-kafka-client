@@ -2,10 +2,8 @@ package org.apache.kafka.clients.enhance.consumer;
 
 import org.apache.kafka.clients.consumer.ConsumerRecord;
 import org.apache.kafka.clients.enhance.ExtMessage;
-import org.apache.kafka.clients.enhance.ExtMessageDef;
 import org.apache.kafka.clients.enhance.ShutdownableThread;
 import org.apache.kafka.clients.enhance.Utility;
-import org.apache.kafka.clients.enhance.consumer.listener.ConcurrentMessageHandler;
 import org.apache.kafka.clients.producer.KafkaProducer;
 import org.apache.kafka.common.TopicPartition;
 import org.slf4j.Logger;
@@ -23,7 +21,7 @@ import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
 
 /**
- * Created by steven03.zhang on 2017/12/13.
+ * Created by steven03.zhang on 2018/1/13.
  */
 public class ConcurrentConsumeService<K> extends AbsConsumeService<K> {
     private static final Logger logger = LoggerFactory.getLogger(ConcurrentConsumeService.class);
@@ -34,7 +32,7 @@ public class ConcurrentConsumeService<K> extends AbsConsumeService<K> {
     private boolean deadLetterTopicIsExists = false;
 
 
-    public ConcurrentConsumeService(ConsumerWithAdmin<K> safeConsumer, KafkaProducer<K, ExtMessage<K>> innerSender, ConsumeClientContext<K> clientContext) {
+    public ConcurrentConsumeService(EnhanceConsumer<K> safeConsumer, KafkaProducer<K, ExtMessage<K>> innerSender, ConsumeClientContext<K> clientContext) {
         super(safeConsumer, innerSender, clientContext);
         this.dispatchService = new ConcurrentDispatchMessageService("concurrent-dispatch-message-service-thread");
         switch (clientContext.consumeModel()) {

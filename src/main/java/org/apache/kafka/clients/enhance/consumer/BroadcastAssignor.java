@@ -9,7 +9,7 @@ import java.util.List;
 import java.util.Map;
 
 /**
- * Created by steven03.zhang on 2017/12/6.
+ * Created by steven03.zhang on 2018/1/6.
  */
 public class BroadcastAssignor extends AbstractPartitionAssignor {
 

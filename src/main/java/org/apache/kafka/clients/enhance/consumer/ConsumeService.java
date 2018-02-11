@@ -9,7 +9,7 @@ import java.util.Collection;
 import java.util.concurrent.TimeUnit;
 
 /**
- * Created by steven03.zhang on 2017/12/13.
+ * Created by steven03.zhang on 2018/1/13.
  */
 public interface ConsumeService<K> {
     long DEFAULT_CLOSE_TIMEOUT_MS = 30 * 1000;

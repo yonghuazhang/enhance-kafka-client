@@ -24,7 +24,7 @@ import static org.apache.kafka.clients.enhance.ExtMessageDef.EXT_MESSAGE_RETRY_C
 
 
 /**
- * Created by steven03.zhang on 2017/12/12.
+ * Created by steven03.zhang on 2018/1/12.
  */
 public class ExtMessageEncoder<K> implements Serializer<ExtMessage<K>>, Deserializer<ExtMessage<K>> {
     private static final Logger logger = LoggerFactory.getLogger(ExtMessageEncoder.class);

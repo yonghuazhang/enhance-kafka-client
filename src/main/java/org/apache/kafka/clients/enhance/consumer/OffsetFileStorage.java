@@ -22,7 +22,7 @@ import java.util.regex.Pattern;
  * topic2 0 122
  * topic2 1 1222
  * topic2 2 12222
- * Created by steven03.zhang on 2017/12/13.
+ * Created by steven03.zhang on 2018/2/6.
  */
 public class OffsetFileStorage<K> extends AbsOffsetStorage<K> {
     private static final Pattern OFFSET_FILE_STORE_PATTERN = Pattern.compile("^(?<topic>\\S+)\\s(?<partition>\\d+)\\s(?<offset>\\d+)$",
@@ -30,7 +30,7 @@ public class OffsetFileStorage<K> extends AbsOffsetStorage<K> {
     private final String offsetFilePath;
     private final String offsetBkFilePath;
 
-    protected OffsetFileStorage(ConsumerWithAdmin<K> safeConsumer, PartitionDataManager partitionDataManager, ConsumeClientContext clientContext) {
+    protected OffsetFileStorage(EnhanceConsumer<K> safeConsumer, PartitionDataManager partitionDataManager, ConsumeClientContext clientContext) {
         super(safeConsumer, partitionDataManager, clientContext, LoadOffsetType.LOAD_FROM_LOCAL_FILE);
         this.offsetFilePath = localOffsetFileName();
         this.offsetBkFilePath = localOffsetBkFileName();

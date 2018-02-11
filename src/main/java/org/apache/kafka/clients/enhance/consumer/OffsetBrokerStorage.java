@@ -4,16 +4,15 @@ import org.apache.kafka.clients.consumer.OffsetAndMetadata;
 import org.apache.kafka.clients.enhance.exception.ConsumeOffsetException;
 import org.apache.kafka.common.TopicPartition;
 
-import java.util.List;
 import java.util.Map;
 
 /**
- * Created by steven03.zhang on 2017/12/13.
+ * Created by steven03.zhang on 2018/2/5.
  */
 public class OffsetBrokerStorage<K> extends AbsOffsetStorage<K> {
 
 
-    protected OffsetBrokerStorage(ConsumerWithAdmin<K> safeConsumer, PartitionDataManager partitionDataManager, ConsumeClientContext clientContext) {
+    protected OffsetBrokerStorage(EnhanceConsumer<K> safeConsumer, PartitionDataManager partitionDataManager, ConsumeClientContext clientContext) {
         super(safeConsumer, partitionDataManager, clientContext, LoadOffsetType.LOAD_FROM_BROKER);
     }
 

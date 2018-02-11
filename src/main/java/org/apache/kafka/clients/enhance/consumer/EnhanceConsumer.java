@@ -1,6 +1,5 @@
 package org.apache.kafka.clients.enhance.consumer;
 
-import org.apache.kafka.clients.CommonClientConfigs;
 import org.apache.kafka.clients.admin.AdminClient;
 import org.apache.kafka.clients.admin.CreateTopicsResult;
 import org.apache.kafka.clients.admin.DescribeClusterResult;
@@ -47,28 +46,28 @@ import java.util.regex.Pattern;
 import static org.apache.kafka.clients.enhance.ExtMessageDef.INVALID_OFFSET_VALUE;
 
 /**
- * ConsumerWithAdmin include admin client and thread-safe
+ * EnhanceConsumer include admin client and thread-safe
  */
-class ConsumerWithAdmin<K> extends KafkaConsumer<K, ExtMessage<K>> implements AdminOperator<K> {
-    private static final Logger log = LoggerFactory.getLogger(ConsumerWithAdmin.class);
+class EnhanceConsumer<K> extends KafkaConsumer<K, ExtMessage<K>> implements AdminOperator<K> {
+    private static final Logger log = LoggerFactory.getLogger(EnhanceConsumer.class);
     private AdminClient adminClient;
-    private final ReentrantLock adminLock = new ReentrantLock();
-    private final ReentrantLock consumerLock = new ReentrantLock();
+    private final ReentrantLock acLock = new ReentrantLock();
+    private final ReentrantLock kcLock = new ReentrantLock();
 
-    public ConsumerWithAdmin(Map<String, Object> configs) {
+    public EnhanceConsumer(Map<String, Object> configs) {
         this(configs, null);
     }
 
-    public ConsumerWithAdmin(Map<String, Object> configs, Deserializer<K> keyDeserializer) {
+    public EnhanceConsumer(Map<String, Object> configs, Deserializer<K> keyDeserializer) {
         super(configs, keyDeserializer, new ExtMessageEncoder<K>());
         initAdminClient();
     }
 
-    public ConsumerWithAdmin(Properties properties) {
+    public EnhanceConsumer(Properties properties) {
         this(properties, null);
     }
 
-    public ConsumerWithAdmin(Properties properties, Deserializer<K> keyDeserializer) {
+    public EnhanceConsumer(Properties properties, Deserializer<K> keyDeserializer) {
         super(properties, keyDeserializer, new ExtMessageEncoder<K>());
         initAdminClient();
     }
@@ -79,81 +78,81 @@ class ConsumerWithAdmin<K> extends KafkaConsumer<K, ExtMessage<K>> implements Ad
 
     @Override
     public Set<TopicPartition> assignment() {
-        consumerLock.lock();
+        kcLock.lock();
         try {
             return super.assignment();
         } finally {
-            consumerLock.unlock();
+            kcLock.unlock();
         }
     }
 
     @Override
     public Set<String> subscription() {
-        consumerLock.lock();
+        kcLock.lock();
         try {
             return super.subscription();
         } finally {
-            consumerLock.unlock();
+            kcLock.unlock();
         }
     }
 
     @Override
     public void subscribe(Collection<String> topics, ConsumerRebalanceListener listener) {
-        consumerLock.lock();
+        kcLock.lock();
         try {
             super.subscribe(topics, listener);
         } finally {
-            consumerLock.unlock();
+            kcLock.unlock();
         }
     }
 
     @Override
     public void subscribe(Collection<String> topics) {
-        consumerLock.lock();
+        kcLock.lock();
         try {
             super.subscribe(topics);
         } finally {
-            consumerLock.unlock();
+            kcLock.unlock();
         }
     }
 
     @Override
     public void subscribe(Pattern pattern, ConsumerRebalanceListener listener) {
-        consumerLock.lock();
+        kcLock.lock();
         try {
             super.subscribe(pattern, listener);
         } finally {
-            consumerLock.unlock();
+            kcLock.unlock();
         }
     }
 
     @Override
     public void subscribe(Pattern pattern) {
-        consumerLock.lock();
+        kcLock.lock();
         try {
             super.subscribe(pattern);
         } finally {
-            consumerLock.unlock();
+            kcLock.unlock();
         }
     }
 
     @Override
     public void unsubscribe() {
-        consumerLock.lock();
+        kcLock.lock();
         try {
             super.unsubscribe();
         } finally {
-            consumerLock.unlock();
+            kcLock.unlock();
         }
     }
 
     @Override
     public void assign(Collection<TopicPartition> partitions) {
-        consumerLock.lock();
+        kcLock.lock();
         try {
             super.assign(partitions);
         } finally {
-            consumerLock.unlock();
+            kcLock.unlock();
         }
     }
 
@@ -179,7 +178,7 @@ class ConsumerWithAdmin<K> extends KafkaConsumer<K, ExtMessage<K>> implements Ad
 
     @Override
     public TopicDescription describeTopic(String topic, long timeout) {
-        adminLock.lock();
+        acLock.lock();
         try {
             DescribeTopicsResult result = adminClient.describeTopics(Arrays.asList(topic));
             return result.all().get(timeout, TimeUnit.MILLISECONDS).get(topic);
@@ -187,13 +186,13 @@ class ConsumerWithAdmin<K> extends KafkaConsumer<K, ExtMessage<K>> implements Ad
             log.info("describe topic [{}] failed, the topic isn't exists.", topic);
             return null;
         } finally {
-            adminLock.unlock();
+            acLock.unlock();
         }
     }
 
     @Override
     public ClusterDescription describeCluster(long timeout) {
-        adminLock.lock();
+        acLock.lock();
         try {
             DescribeClusterResult result = adminClient.describeCluster();
             Collection<Node> nodes = result.nodes().get(timeout, TimeUnit.MILLISECONDS);
@@ -204,7 +203,7 @@ class ConsumerWithAdmin<K> extends KafkaConsumer<K, ExtMessage<K>> implements Ad
             log.warn("describe cluster failed, caused by [{}].", ex);
             return null;
         } finally {
-            adminLock.unlock();
+            acLock.unlock();
         }
     }
 
@@ -219,7 +218,7 @@ class ConsumerWithAdmin<K> extends KafkaConsumer<K, ExtMessage<K>> implements Ad
 
     @Override
     public boolean createTopic(String newTopic, int partitions, short replicas, final Map<String, String> configs, long timeoutInMs) {
-        adminLock.lock();
+        acLock.lock();
         try {
             NewTopic topic = new NewTopic(newTopic, partitions, replicas);
             topic.configs(configs);
@@ -234,7 +233,7 @@ class ConsumerWithAdmin<K> extends KafkaConsumer<K, ExtMessage<K>> implements Ad
             log.error("createTopic for topic [{}] failed, caused by [{}].", newTopic, ex);
             return false;
         } finally {
-            adminLock.unlock();
+            acLock.unlock();
         }
     }
 
@@ -245,7 +244,7 @@ class ConsumerWithAdmin<K> extends KafkaConsumer<K, ExtMessage<K>> implements Ad
 
     @Override
     public boolean createTopic(String newTopic) {
-        adminLock.lock();
+        acLock.lock();
         try {
             DescribeClusterResult result = adminClient.describeCluster();
             int bNum = result.nodes().get().size();
@@ -255,7 +254,7 @@ class ConsumerWithAdmin<K> extends KafkaConsumer<K, ExtMessage<K>> implements Ad
             log.error("createTopic for topic [{}] failed, caused by [{}].", newTopic, ex);
             return false;
         } finally {
-            adminLock.unlock();
+            acLock.unlock();
         }
     }
 
@@ -263,7 +262,7 @@ class ConsumerWithAdmin<K> extends KafkaConsumer<K, ExtMessage<K>> implements Ad
     public long searchOffset(TopicPartition tp, long timestamp) {
         if (null == tp) return INVALID_OFFSET_VALUE;
 
-        adminLock.lock();
+        acLock.lock();
         try {
             Map<TopicPartition, Long> searchRequest = new HashMap<>(1);
             searchRequest.put(tp, timestamp);
@@ -273,7 +272,7 @@ class ConsumerWithAdmin<K> extends KafkaConsumer<K, ExtMessage<K>> implements Ad
             log.error("searchOffset for TopicPartition [{}] failed, caused by [{}].", tp, ex);
             throw new KafkaAdminException(ex);
         } finally {
-            adminLock.unlock();
+            acLock.unlock();
         }
     }
 
@@ -282,14 +281,14 @@ class ConsumerWithAdmin<K> extends KafkaConsumer<K, ExtMessage<K>> implements Ad
         if (null == tp) return INVALID_OFFSET_VALUE;
         Long searchResult;
 
-        adminLock.lock();
+        acLock.lock();
         try {
             searchResult = this.beginningOffsets(Arrays.asList(tp)).get(tp);
         } catch (Exception e) {
             log.error("beginningOffsets for TopicPartition [{}] failed, caused by [{}].", tp, e);
             throw new KafkaAdminException(e);
         } finally {
-            adminLock.unlock();
+            acLock.unlock();
         }
         return (null == searchResult) ? INVALID_OFFSET_VALUE : searchResult.longValue();
     }
@@ -299,14 +298,14 @@ class ConsumerWithAdmin<K> extends KafkaConsumer<K, ExtMessage<K>> implements Ad
         if (null == tp) return INVALID_OFFSET_VALUE;
         Long searchResult;
 
-        adminLock.lock();
+        acLock.lock();
         try {
             searchResult = this.endOffsets(Arrays.asList(tp)).get(tp);
         } catch (Exception e) {
             log.error("endOffsets for TopicPartition [{}] failed, caused by [{}].", tp, e);
             throw new KafkaAdminException(e);
         } finally {
-            adminLock.unlock();
+            acLock.unlock();
         }
         return (null == searchResult) ? INVALID_OFFSET_VALUE : searchResult.longValue();
     }
@@ -314,7 +313,7 @@ class ConsumerWithAdmin<K> extends KafkaConsumer<K, ExtMessage<K>> implements Ad
     @Override
     public ExtMessage<K> viewMessage(TopicPartition tp, long offset) throws KafkaAdminException {
         ExtMessage<K> message = null;
-        adminLock.lock();
+        acLock.lock();
         try {
             RetrieveRecordsOptions options = new RetrieveRecordsOptions();
             options.timeoutMs((int) this.requestTimeoutMs);
@@ -328,7 +327,7 @@ class ConsumerWithAdmin<K> extends KafkaConsumer<K, ExtMessage<K>> implements Ad
             log.error("viewMessage for TopicPartition [{}] failed, caused by [{}].", tp, e);
             throw new KafkaAdminException(e);
         } finally {
-            adminLock.unlock();
+            acLock.unlock();
         }
         return message;
     }
@@ -336,7 +335,7 @@ class ConsumerWithAdmin<K> extends KafkaConsumer<K, ExtMessage<K>> implements Ad
     @Override
     public List<ExtMessage<K>> queryMessages(TopicPartition tp, long bTimestamp, int size) throws KafkaAdminException {
         List<ExtMessage<K>> messages = new ArrayList<>();
-        adminLock.lock();
+        acLock.lock();
         try {
             RetrieveRecordsOptions options = new RetrieveRecordsOptions();
             options.timeoutMs((int) this.requestTimeoutMs);
@@ -348,7 +347,7 @@ class ConsumerWithAdmin<K> extends KafkaConsumer<K, ExtMessage<K>> implements Ad
             log.error("queryMessages for TopicPartition [{}] failed, caused by [{}].", tp, e);
             throw new KafkaAdminException(e);
         } finally {
-            adminLock.unlock();
+            acLock.unlock();
         }
         return messages;
     }
@@ -357,14 +356,14 @@ class ConsumerWithAdmin<K> extends KafkaConsumer<K, ExtMessage<K>> implements Ad
     public ConsumerRecords<K, ExtMessage<K>> poll(long timeout) {
         ConsumerRecords<K, ExtMessage<K>> records = null;
         try {
-            if (consumerLock.tryLock(timeout, TimeUnit.MILLISECONDS)) {
+            if (kcLock.tryLock(timeout, TimeUnit.MILLISECONDS)) {
                 try {
                     records = super.poll(timeout);
                     for (ConsumerRecord<K, ExtMessage<K>> record : records) {
                         ExtMessageUtils.updateByRecord(record.value(), record);
                     }
                 } finally {
-                    consumerLock.unlock();
+                    kcLock.unlock();
                 }
             }
         } catch (InterruptedException e) {
@@ -378,201 +377,201 @@ class ConsumerWithAdmin<K> extends KafkaConsumer<K, ExtMessage<K>> implements Ad
 
     @Override
     public void commitSync() {
-        consumerLock.lock();
+        kcLock.lock();
         try {
             super.commitSync();
         } finally {
-            consumerLock.unlock();
+            kcLock.unlock();
         }
     }
 
     @Override
     public void commitSync(Map<TopicPartition, OffsetAndMetadata> offsets) {
-        consumerLock.lock();
+        kcLock.lock();
         try {
             super.commitSync(offsets);
         } finally {
-            consumerLock.unlock();
+            kcLock.unlock();
         }
     }
 
     @Override
     public void commitAsync() {
-        consumerLock.lock();
+        kcLock.lock();
         try {
             super.commitAsync();
         } finally {
-            consumerLock.unlock();
+            kcLock.unlock();
         }
     }
 
     @Override
     public void commitAsync(OffsetCommitCallback callback) {
-        consumerLock.lock();
+        kcLock.lock();
         try {
             super.commitAsync(callback);
         } finally {
-            consumerLock.unlock();
+            kcLock.unlock();
         }
     }
 
     @Override
     public void commitAsync(Map<TopicPartition, OffsetAndMetadata> offsets, OffsetCommitCallback callback) {
-        consumerLock.lock();
+        kcLock.lock();
         try {
             super.commitAsync(offsets, callback);
         } finally {
-            consumerLock.unlock();
+            kcLock.unlock();
         }
     }
 
     @Override
     public void seek(TopicPartition partition, long offset) {
-        consumerLock.lock();
+        kcLock.lock();
         try {
             super.seek(partition, offset);
         } finally {
-            consumerLock.unlock();
+            kcLock.unlock();
         }
     }
 
     @Override
     public void seekToBeginning(Collection<TopicPartition> partitions) {
-        consumerLock.lock();
+        kcLock.lock();
         try {
             super.seekToBeginning(partitions);
         } finally {
-            consumerLock.unlock();
+            kcLock.unlock();
         }
     }
 
     @Override
     public void seekToEnd(Collection<TopicPartition> partitions) {
-        consumerLock.lock();
+        kcLock.lock();
         try {
             super.seekToEnd(partitions);
         } finally {
-            consumerLock.unlock();
+            kcLock.unlock();
         }
     }
 
     @Override
     public long position(TopicPartition partition) {
-        consumerLock.lock();
+        kcLock.lock();
         try {
             return super.position(partition);
         } finally {
-            consumerLock.unlock();
+            kcLock.unlock();
         }
     }
 
     @Override
     public OffsetAndMetadata committed(TopicPartition partition) {
-        consumerLock.lock();
+        kcLock.lock();
         try {
             return super.committed(partition);
         } finally {
-            consumerLock.unlock();
+            kcLock.unlock();
         }
     }
 
     @Override
     public List<PartitionInfo> partitionsFor(String topic) {
-        consumerLock.lock();
+        kcLock.lock();
         try {
             return super.partitionsFor(topic);
         } finally {
-            consumerLock.unlock();
+            kcLock.unlock();
         }
     }
 
     @Override
     public Map<String, List<PartitionInfo>> listTopics() {
-        consumerLock.lock();
+        kcLock.lock();
         try {
             return super.listTopics();
         } finally {
-            consumerLock.unlock();
+            kcLock.unlock();
         }
     }
 
     @Override
     public void pause(Collection<TopicPartition> partitions) {
-        consumerLock.lock();
+        kcLock.lock();
         try {
             super.pause(partitions);
         } finally {
-            consumerLock.unlock();
+            kcLock.unlock();
         }
     }
 
     @Override
     public void resume(Collection<TopicPartition> partitions) {
-        consumerLock.lock();
+        kcLock.lock();
         try {
             super.resume(partitions);
         } finally {
-            consumerLock.unlock();
+            kcLock.unlock();
         }
     }
 
     @Override
     public Set<TopicPartition> paused() {
-        consumerLock.lock();
+        kcLock.lock();
         try {
             return super.paused();
         } finally {
-            consumerLock.unlock();
+            kcLock.unlock();
         }
     }
 
     @Override
     public Map<TopicPartition, OffsetAndTimestamp> offsetsForTimes(Map<TopicPartition, Long> timestampsToSearch) {
-        consumerLock.lock();
+        kcLock.lock();
         try {
             return super.offsetsForTimes(timestampsToSearch);
         } finally {
-            consumerLock.unlock();
+            kcLock.unlock();
         }
     }
 
     @Override
     public Map<TopicPartition, Long> beginningOffsets(Collection<TopicPartition> partitions) {
-        consumerLock.lock();
+        kcLock.lock();
         try {
             return super.beginningOffsets(partitions);
         } finally {
-            consumerLock.unlock();
+            kcLock.unlock();
         }
     }
 
     @Override
     public Map<TopicPartition, Long> endOffsets(Collection<TopicPartition> partitions) {
-        consumerLock.lock();
+        kcLock.lock();
         try {
             return super.endOffsets(partitions);
         } finally {
-            consumerLock.unlock();
+            kcLock.unlock();
         }
     }
 
     @Override
     public void close() {
-        consumerLock.lock();
+        kcLock.lock();
         try {
             super.close();
         } finally {
-            consumerLock.unlock();
+            kcLock.unlock();
         }
     }
 
     @Override
     public void close(long timeout, TimeUnit timeUnit) {
-        consumerLock.lock();
+        kcLock.lock();
         try {
             super.close(timeout, timeUnit);
         } finally {
-            consumerLock.unlock();
+            kcLock.unlock();
         }
     }
 

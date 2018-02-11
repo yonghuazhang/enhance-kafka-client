@@ -35,13 +35,13 @@ public abstract class AbsOffsetStorage<K> implements ConsumerRebalanceListener {
     protected Object lock = new Object();
 
     protected final LoadOffsetType loadType;
-    protected final ConsumerWithAdmin<K> safeConsumer;
+    protected final EnhanceConsumer<K> safeConsumer;
     protected final PartitionDataManager<K, ExtMessage<K>> partitionDataManager;
     protected final ConsumeClientContext clientContext;
     private final Timer storeTimer = new Timer();
     private final TimerTask offsetStoreTask = new OffsetStoreTask();
 
-    protected AbsOffsetStorage(ConsumerWithAdmin<K> safeConsumer, PartitionDataManager partitionDataManager,
+    protected AbsOffsetStorage(EnhanceConsumer<K> safeConsumer, PartitionDataManager partitionDataManager,
                                ConsumeClientContext clientContext, LoadOffsetType loadType) {
         this.loadType = loadType;
         this.safeConsumer = safeConsumer;
