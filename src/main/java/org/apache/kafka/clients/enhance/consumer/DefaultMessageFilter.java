@@ -20,7 +20,7 @@ public class DefaultMessageFilter<K> extends AbsExtMessageFilter<K> {
     }
 
     @Override
-    public boolean canDelieveryMessage(ExtMessage<K> message, Headers headers) {
+    public boolean canDeliveryMessage(ExtMessage<K> message, Headers headers) {
         if (permitAll) {
             return true;
         }

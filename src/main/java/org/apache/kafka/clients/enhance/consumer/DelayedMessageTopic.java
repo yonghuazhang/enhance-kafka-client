@@ -3,7 +3,6 @@ package org.apache.kafka.clients.enhance.consumer;
 import java.util.concurrent.TimeUnit;
 
 public enum DelayedMessageTopic {
-
     SYS_DELAYED_TOPIC_5S(5, TimeUnit.SECONDS),
     SYS_DELAYED_TOPIC_10S(10, TimeUnit.SECONDS),
     SYS_DELAYED_TOPIC_15S(15, TimeUnit.SECONDS),

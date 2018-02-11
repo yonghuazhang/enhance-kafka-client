@@ -6,7 +6,7 @@ import java.util.NoSuchElementException;
  * Created by steven03.zhang on 2018/1/6.
  */
 public enum ConsumeModel {
-    NO_CONSUMER_MODEL(-1, "NoConsumeModel"),
+    GROUP_NULL_MODEL(-1, "NullModel"),
     GROUP_CLUSTERING(0, "Clustering"),
     GROUP_BROADCASTING(1, "Broadcasting");
 

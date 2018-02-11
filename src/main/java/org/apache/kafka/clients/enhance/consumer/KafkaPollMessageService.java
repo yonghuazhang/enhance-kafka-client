@@ -121,7 +121,7 @@ class KafkaPollMessageService<K> extends ShutdownableThread {
             List<ConsumerRecord<K, ExtMessage<K>>> partitionRecords = records.records(tp);
 
             for (ConsumerRecord<K, ExtMessage<K>> partitionRecord : partitionRecords) {
-                if (filter.canDelieveryMessage(partitionRecord.value(), partitionRecord.headers())) {
+                if (filter.canDeliveryMessage(partitionRecord.value(), partitionRecord.headers())) {
                     fitlerRecordsByPartition.add(partitionRecord);
                 }
             }

@@ -76,7 +76,7 @@ public abstract class AbsConsumeService<K> implements ConsumeService<K> {
 
                 break;
             case GROUP_CLUSTERING:
-            case NO_CONSUMER_MODEL:
+            case GROUP_NULL_MODEL:
             default:
                 this.offsetPersistor = new OffsetBrokerStorage(safeConsumer, partitionDataManager, clientContext);
                 break;
