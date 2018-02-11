@@ -177,7 +177,7 @@ public abstract class AbsConsumeService<K> implements ConsumeService<K> {
             dispatchTaskAtOnce(requestTask);
         } catch (RejectedExecutionException e) {
             logger.warn("[AbsConsumeService-submitConsumeRequest] task is too much. and wait 3s and dispatch again.");
-            dispatchTaskLater(requestTask, clientContext.clientRetryBackoffMs(), TimeUnit.MILLISECONDS);
+            dispatchTaskLater(requestTask, clientContext.clientTaskRetryBackoffMs(), TimeUnit.MILLISECONDS);
         }
     }
 

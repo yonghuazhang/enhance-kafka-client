@@ -34,7 +34,7 @@ public class KafkaPushConsumerTest {
         consumer = new KafkaPushConsumer<String>(props, String.class);
         consumer.consumeSetting()
                 .consumeBatchSize(10)
-                .consumeModel(ConsumeModel.GROUP_CLUSTERING)
+                .consumeModel(ConsumeGroupModel.GROUP_CLUSTERING)
                 .maxMessageDealTimeMs(10, TimeUnit.SECONDS);
 
         final AtomicInteger total = new AtomicInteger(0);

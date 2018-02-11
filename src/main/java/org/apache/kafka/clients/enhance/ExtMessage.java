@@ -30,7 +30,7 @@ public class ExtMessage<K> {
     //the below properties will be persisted in record.
     private int retryCount;
     private int delayedLevel;
-    private byte[] body;
+    private byte[] msgValue;
     private final Map<String, String> properties = new HashMap<>();
 
     public static <K> ExtMessage<K> parseFromRetryMessage(ExtMessage<K> retryMessage) {
@@ -42,7 +42,7 @@ public class ExtMessage<K> {
             newMessage.setOffset(Long.parseLong(retryMessage.getProperty(PROPERTY_REAL_OFFSET)));
             newMessage.setStoreTimeMs(Long.parseLong(retryMessage.getProperty(PROPERTY_REAL_STORE_TIME)));
 
-            newMessage.setBody(retryMessage.getBody());
+            newMessage.setMsgValue(retryMessage.getMsgValue());
             newMessage.setDelayedLevel(retryMessage.getDelayedLevel());
             newMessage.setRetryCount(retryMessage.getRetryCount());
             return newMessage;
@@ -215,12 +215,12 @@ public class ExtMessage<K> {
         this.topic = topic;
     }
 
-    public byte[] getBody() {
-        return body;
+    public byte[] getMsgValue() {
+        return msgValue;
     }
 
-    void setBody(byte[] body) {
-        this.body = null == body ? new byte[0] : body;
+    void setMsgValue(byte[] msgValue) {
+        this.msgValue = null == msgValue ? new byte[0] : msgValue;
     }
 
     public Map<String, String> getProperties() {

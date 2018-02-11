@@ -36,11 +36,11 @@ public enum DelayedMessageTopic {
         return unit.toMillis(duration);
     }
 
-    public String getDelayedTopicName(String preffix, String suffix) {
+    public String getDelayedTopicName(String prefix, String suffix) {
         StringBuffer builder = new StringBuffer();
 
-        if (null != preffix && !preffix.isEmpty()) {
-            builder.append(preffix);
+        if (null != prefix && !prefix.isEmpty()) {
+            builder.append(prefix);
         }
 
         builder.append(this.name());
@@ -53,7 +53,7 @@ public enum DelayedMessageTopic {
     }
 
     // level from 1 to 20
-    public String getDelayedTopicByLevel(final int level, final String preffix, final String suffix) {
+    public String getDelayedTopicByLevel(final int level, final String prefix, final String suffix) {
         DelayedMessageTopic[] allDelayedTopics = DelayedMessageTopic.values();
         int idx = level - 1;
         if (idx < 0) {
@@ -61,7 +61,7 @@ public enum DelayedMessageTopic {
         } else if(idx > allDelayedTopics.length - 1) {
             idx = allDelayedTopics.length - 1;
         }
-        return allDelayedTopics[idx].getDelayedTopicName(preffix, suffix);
+        return allDelayedTopics[idx].getDelayedTopicName(prefix, suffix);
     }
 
     public static DelayedMessageTopic parseFromDelayLevel(int level) {

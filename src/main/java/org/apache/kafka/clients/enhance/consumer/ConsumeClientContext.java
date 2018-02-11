@@ -33,9 +33,10 @@ import static org.apache.kafka.clients.enhance.consumer.ConsumeType.CONSUME_UNKN
 public final class ConsumeClientContext<K> {
     private static final Logger logger = LoggerFactory.getLogger(ConsumeClientContext.class);
     private static final String INNER_PRODUCER_NAME_SUFFIX = "_inner_producer";
+
     public static final int INVALID_PROPERTY_VALUE = Integer.MIN_VALUE;
-    public static final long TIME_WAIT_FOR_POLL_REC_MS = 200L;
     public static final int DEFAULT_CONSUME_BATCH_SIZE = 1;
+    public static final long TIME_WAIT_FOR_POLL_REC_MS = 200L;
     public static final long DEFAULT_OFFSET_STORE_INTERVALS = 5000L;
     public static final long CLIENT_RETRY_BACKOFF_MS = 3000L;
     public static final long DEFAULT_MAX_MESSAGE_DEAL_TIME_MS = 5 * 60 * 1000L;
@@ -43,7 +44,7 @@ public final class ConsumeClientContext<K> {
     private final Map<String, Object> innerConsumeConfig = new HashMap<>();
     private final Map<String, Object> innerProducerConfig = new HashMap<>();
 
-    private ConsumeModel consumeModel = ConsumeModel.GROUP_CLUSTERING;
+    private ConsumeGroupModel consumeGroupModel = ConsumeGroupModel.GROUP_CLUSTERING;
     private ConsumeType consumeType = CONSUME_UNKNOWN;
     private ExtResetStrategy strategy = ExtResetStrategy.RESET_NONE;
     private volatile int consumeBatchSize = DEFAULT_CONSUME_BATCH_SIZE;
@@ -59,7 +60,7 @@ public final class ConsumeClientContext<K> {
     private String clientId = null;
     private long offsetStoreIntervals = DEFAULT_OFFSET_STORE_INTERVALS; //every 5s store current offsets
     private long pollMessageAwaitTimeoutMs = TIME_WAIT_FOR_POLL_REC_MS;
-    private long clientRetryBackoffMs = CLIENT_RETRY_BACKOFF_MS;
+    private long clientTaskRetryBackoffMs = CLIENT_RETRY_BACKOFF_MS;
     private long maxMessageDealTimeMs = DEFAULT_MAX_MESSAGE_DEAL_TIME_MS;
 
     private Serializer<K> keySerializer = null;
@@ -69,17 +70,17 @@ public final class ConsumeClientContext<K> {
     private int producerRetries = INVALID_PROPERTY_VALUE;
     private int producerBatchSize = INVALID_PROPERTY_VALUE;
 
-    public ConsumeClientContext clientRetryBackoffMs(long backoffTime, TimeUnit unit) {
+    public ConsumeClientContext clientTaskRetryBackoffMs(long backoffTime, TimeUnit unit) {
         try {
-            clientRetryBackoffMs = unit.toMillis(backoffTime);
+            clientTaskRetryBackoffMs = unit.toMillis(backoffTime);
         } catch (Exception ex) {
             logger.warn("Setting retry backoff time failed, use default value. due to ", ex);
         }
         return this;
     }
 
-    public long clientRetryBackoffMs() {
-        return clientRetryBackoffMs;
+    public long clientTaskRetryBackoffMs() {
+        return clientTaskRetryBackoffMs;
     }
 
     public ConsumeClientContext maxMessageDealTimeMs(long dealTime, TimeUnit unit) {
@@ -313,8 +314,8 @@ public final class ConsumeClientContext<K> {
         }
     }
 
-    public ConsumeClientContext consumeModel(ConsumeModel model) {
-        this.consumeModel = model;
+    public ConsumeClientContext consumeModel(ConsumeGroupModel model) {
+        this.consumeGroupModel = model;
         updateConfigByProp(innerConsumeConfig, ConsumerConfig.PARTITION_ASSIGNMENT_STRATEGY_CONFIG,
                 BroadcastAssignor.class.getName());
         return this;
@@ -417,8 +418,8 @@ public final class ConsumeClientContext<K> {
         return this.producerMaxBlockMs;
     }
 
-    public ConsumeModel consumeModel() {
-        return consumeModel;
+    public ConsumeGroupModel consumeModel() {
+        return consumeGroupModel;
     }
 
     public ExtResetStrategy resetStrategy() {

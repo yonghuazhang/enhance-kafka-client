@@ -102,7 +102,7 @@ public class KafkaPushConsumer<K> implements ConsumeOperator<K> {
     }
 
     @Override
-    public ConsumeModel consumeModel() {
+    public ConsumeGroupModel consumeModel() {
         return this.clientContext.consumeModel();
     }
 

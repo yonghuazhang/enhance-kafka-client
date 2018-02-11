@@ -15,7 +15,7 @@ public interface ConsumeOperator<K> {
 
     String clientId();
 
-    ConsumeModel consumeModel();
+    ConsumeGroupModel consumeModel();
 
     ExtResetStrategy consumeResetStarategy();
 

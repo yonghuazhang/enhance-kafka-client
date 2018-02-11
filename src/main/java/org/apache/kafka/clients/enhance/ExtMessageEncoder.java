@@ -44,7 +44,7 @@ public class ExtMessageEncoder<K> implements Serializer<ExtMessage<K>>, Deserial
             extMessage.setRetryCount((byte)mesgStruct.get(EXT_MESSAGE_RETRY_COUNT_FIELD));
             extMessage.setDelayedLevel((byte) mesgStruct.get(EXT_MESSAGE_DELAY_LEVEL_FIELD));
             ByteBuffer bodyBuffer = (ByteBuffer) mesgStruct.get(EXT_MESSAGE_BODY_FIELD);
-            extMessage.setBody(bodyBuffer.array());
+            extMessage.setMsgValue(bodyBuffer.array());
 
             for (Object objProp : mesgStruct.getArray(EXT_MESSAGE_ATTR_FIELD)) {
                 Struct pStruct = (Struct) objProp;
@@ -54,7 +54,7 @@ public class ExtMessageEncoder<K> implements Serializer<ExtMessage<K>>, Deserial
             }
         } catch (Exception ex) {
             logger.warn("message format isn't the format of ExtMessage.");
-            extMessage.setBody(data);
+            extMessage.setMsgValue(data);
         }
         return extMessage;
     }
@@ -65,7 +65,7 @@ public class ExtMessageEncoder<K> implements Serializer<ExtMessage<K>>, Deserial
 
         msgStruct.set(EXT_MESSAGE_RETRY_COUNT_FIELD, (byte)data.getRetryCount());
         msgStruct.set(EXT_MESSAGE_DELAY_LEVEL_FIELD, (byte)data.getDelayedLevel());
-        msgStruct.set(EXT_MESSAGE_BODY_FIELD, ByteBuffer.wrap(data.getBody()));
+        msgStruct.set(EXT_MESSAGE_BODY_FIELD, ByteBuffer.wrap(data.getMsgValue()));
 
         List<Struct> propStructList = new ArrayList<>();
         for (Map.Entry<String, String> item : data.getProperties().entrySet()) {
