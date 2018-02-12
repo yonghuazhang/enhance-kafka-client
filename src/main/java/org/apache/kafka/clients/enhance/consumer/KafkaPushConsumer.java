@@ -215,7 +215,7 @@ public class KafkaPushConsumer<K> implements ConsumeOperator<K> {
                         consumeService = new ConcurrentConsumeService<>(safeConsumer, innerSender, clientContext);
                         break;
                     default:
-                        throw new KafkaConsumeException("unsupported Consume type. please check code.");
+                        throw new KafkaConsumeException("KafkaPushConsumer unsupported Consume type. please check code.");
                 }
                 consumeService.start();
                 isRunning = true;
@@ -266,7 +266,7 @@ public class KafkaPushConsumer<K> implements ConsumeOperator<K> {
                 long timestamp = Utility.convertTimeByString(dateString);
                 seekToTime(timestamp);
             } catch (ParseException e) {
-                logger.warn("seekToTime failed. due to parsing [{}] date format error. ", dateString);
+                logger.warn("KafkaPushConsumer seekToTime failed. due to parsing [{}] date format error. ", dateString);
             }
         } else {
             logger.info("KafkaPushConsumer hasn't been initialized.");
@@ -298,7 +298,11 @@ public class KafkaPushConsumer<K> implements ConsumeOperator<K> {
 
     @Override
     public void addConsumeHook(ConsumeMessageHook<K> consumeHook) {
-        this.clientContext.addConsumeHook(consumeHook);
+        if (!isRunning) {
+            this.clientContext.addConsumeHook(consumeHook);
+        } else {
+            logger.warn("addConsumeHook must be executed before service run.");
+        }
     }
 
     @Override

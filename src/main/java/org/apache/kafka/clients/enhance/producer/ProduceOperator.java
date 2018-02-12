@@ -29,4 +29,5 @@ public interface ProduceOperator<K> extends ClientOperator {
     Future<RecordMetadata> sendMessage(ExtMessage<K> message);
 
     void addProducerHook(ConsumeMessageHook consumeHook);
+
 }

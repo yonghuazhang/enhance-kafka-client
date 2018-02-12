@@ -13,6 +13,7 @@ import java.util.Set;
 public final class ProducerClientContext<K> {
     private static final Logger logger = LoggerFactory.getLogger(ProducerClientContext.class);
     private final Map<String, Object> innerProducerConfig = new HashMap<>();
+    private final SendMessageHooks<K> hooks = new SendMessageHooks<>();
 
     private Serializer<K> keySerializer = null;
 
@@ -146,5 +147,9 @@ public final class ProducerClientContext<K> {
 
     Map<String, Object> getProducerConfig(){
         return this.innerProducerConfig;
+    }
+
+    public void addSendMessageHook(SendMessageHook<K> hook) {
+        this.hooks.addSendMessageHook(hook);
     }
 }

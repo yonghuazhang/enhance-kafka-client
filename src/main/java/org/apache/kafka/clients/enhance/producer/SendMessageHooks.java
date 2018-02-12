@@ -6,13 +6,14 @@ import org.apache.kafka.clients.producer.ProducerRecord;
 import org.apache.kafka.clients.producer.RecordMetadata;
 import org.apache.kafka.clients.producer.internals.ProducerInterceptors;
 
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 
 public final class SendMessageHooks<K> extends ProducerInterceptors<K, ExtMessage<K>> {
 
-    public SendMessageHooks(List<ProducerInterceptor<K, ExtMessage<K>>> producerInterceptors) {
-        super(producerInterceptors);
+    public SendMessageHooks() {
+        super(new ArrayList<ProducerInterceptor<K, ExtMessage<K>>>());
     }
 
     public void addSendMessageHook(final SendMessageHook<K> hook) {
@@ -39,7 +40,19 @@ public final class SendMessageHooks<K> extends ProducerInterceptors<K, ExtMessag
         });
     }
 
+    public void addSendMessageHook(final ProducerInterceptor<K, ExtMessage<K>> interceptor) {
+        this.interceptors.add(interceptor);
+    }
+
+    public void addSendMessageHook(final List<ProducerInterceptor<K, ExtMessage<K>>> interceptors) {
+        this.interceptors.addAll(interceptors);
+    }
+
     public void clearHooks() {
         this.interceptors.clear();
+    }
+
+    public boolean isEmpty() {
+        return this.interceptors.isEmpty();
     }
 }

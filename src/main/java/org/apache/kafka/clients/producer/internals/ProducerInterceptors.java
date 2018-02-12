@@ -136,4 +136,8 @@ public class ProducerInterceptors<K, V> implements Closeable {
             }
         }
     }
+
+    public List<ProducerInterceptor<K, V>> getInterceptors() {
+        return interceptors;
+    }
 }
