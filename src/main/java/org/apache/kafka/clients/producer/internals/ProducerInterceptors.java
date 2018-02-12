@@ -34,7 +34,7 @@ import java.util.List;
  */
 public class ProducerInterceptors<K, V> implements Closeable {
     private static final Logger log = LoggerFactory.getLogger(ProducerInterceptors.class);
-    private final List<ProducerInterceptor<K, V>> interceptors;
+    protected final List<ProducerInterceptor<K, V>> interceptors;
 
     public ProducerInterceptors(List<ProducerInterceptor<K, V>> interceptors) {
         this.interceptors = interceptors;

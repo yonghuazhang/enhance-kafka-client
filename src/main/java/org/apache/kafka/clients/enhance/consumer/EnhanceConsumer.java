@@ -36,6 +36,7 @@ import java.util.Arrays;
 import java.util.Collection;
 import java.util.HashMap;
 import java.util.List;
+import java.util.Locale;
 import java.util.Map;
 import java.util.Properties;
 import java.util.Set;
@@ -210,7 +211,7 @@ class EnhanceConsumer<K> extends KafkaConsumer<K, ExtMessage<K>> implements Admi
     @Override
     public boolean isTopicExists(String topic) {
         TopicDescription topicInfo = describeTopic(topic, 3000L);
-        if (null != topicInfo && topicInfo.name().equals(topic)){
+        if (null != topicInfo && topicInfo.name().equals(topic)) {
             return true;
         }
         return false;
@@ -576,10 +577,14 @@ class EnhanceConsumer<K> extends KafkaConsumer<K, ExtMessage<K>> implements Admi
     }
 
     public long getPartitionLag(TopicPartition tp, boolean committed) {
-        if (committed) {
-            return this.subscriptions.partitionLag(tp, IsolationLevel.READ_COMMITTED);
-        } else
-            return this.subscriptions.partitionLag(tp, IsolationLevel.READ_UNCOMMITTED);
+        IsolationLevel level = null;
+        try {
+            level = IsolationLevel.valueOf(config.getString(ConsumerConfig.ISOLATION_LEVEL_CONFIG)
+                    .toUpperCase(Locale.ROOT));
+        } catch (IllegalArgumentException e) {
+            level = IsolationLevel.READ_UNCOMMITTED;
+        }
+        return this.subscriptions.partitionLag(tp, level);
     }
 
 }
