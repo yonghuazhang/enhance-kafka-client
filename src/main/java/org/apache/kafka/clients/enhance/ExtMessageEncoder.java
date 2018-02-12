@@ -78,7 +78,7 @@ public class ExtMessageEncoder<K> implements Serializer<ExtMessage<K>>, Deserial
         msgStruct.set(EXT_MESSAGE_ATTR_FIELD, propStructList.toArray());
         int byteSize = msgStruct.sizeOf();
 
-        //use bufferpool to improve allocate performance, and reduce jvm gc.
+        //in the future, use bufferpool to improve allocate performance, and reduce jvm gc.
         ByteBuffer buffer = ByteBuffer.allocate(byteSize);
         msgStruct.writeTo(buffer);
         buffer.rewind();

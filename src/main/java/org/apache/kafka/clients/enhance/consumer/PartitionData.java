@@ -176,6 +176,8 @@ public class PartitionData<K, V> {
                 tmpMaxOffset = (partitionMaxPutOffset > tmpMaxOffset) ? partitionMaxPutOffset : tmpMaxOffset;
                 if (tmpMaxOffset > lastAckOffset.get()) {
                     lastAckOffset.set(tmpMaxOffset);
+                } else {
+                    logger.debug("local retry message. message offsets = [{}]", offsets);
                 }
             } else {
                 lastAckOffset.set(slidingWindow.firstKey().longValue() - 1L);

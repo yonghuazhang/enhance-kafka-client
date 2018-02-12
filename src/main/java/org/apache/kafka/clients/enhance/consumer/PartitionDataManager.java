@@ -23,7 +23,6 @@ public class PartitionDataManager<K, V> {
 
     final static int MAX_OFFSET_INTERVALS = 2000;
     final static int MAX_SIZE_SLIDING_WINDOWS = 1024;
-    final int MAX_CONSUME_TIME_INTERVALS_IN_MS = 5 * 60 * 1000;
     private final ConcurrentHashMap<TopicPartition, PartitionData<K, V>> patitionDatas = new ConcurrentHashMap<>();
     private final ConcurrentHashMap<TopicPartition, List<ConsumerRecord<K, V>>> saveFailedRecords = new ConcurrentHashMap<>();
 

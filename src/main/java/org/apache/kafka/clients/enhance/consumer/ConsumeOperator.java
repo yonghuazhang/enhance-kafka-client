@@ -1,6 +1,7 @@
 package org.apache.kafka.clients.enhance.consumer;
 
 import org.apache.kafka.clients.enhance.AbsExtMessageFilter;
+import org.apache.kafka.clients.enhance.ClientOperator;
 import org.apache.kafka.clients.enhance.consumer.listener.ConsumeMessageHook;
 import org.apache.kafka.clients.enhance.consumer.listener.MessageHandler;
 import org.apache.kafka.common.TopicPartition;
@@ -9,11 +10,9 @@ import java.util.Collection;
 import java.util.Set;
 import java.util.concurrent.TimeUnit;
 
-public interface ConsumeOperator<K> {
+public interface ConsumeOperator<K> extends ClientOperator {
 
     String groupId();
-
-    String clientId();
 
     ConsumeGroupModel consumeModel();
 
@@ -33,12 +32,6 @@ public interface ConsumeOperator<K> {
 
     Set<String> subscription();
 
-    void shutdownNow();
-
-    void shutdown(long timeout, TimeUnit unit);
-
-    void start();
-
     void seek(TopicPartition partition, long offset);
 
     void seekToTime(long timestamp);
@@ -50,12 +43,8 @@ public interface ConsumeOperator<K> {
 
     void seekToEnd();
 
-    void registerHandler(MessageHandler handler);
+    void registerHandler(MessageHandler<K, ?> handler);
 
-    void addConsumeHook(ConsumeMessageHook consumeHook);
-
-    void suspend();
-
-    void resume();
+    void addConsumeHook(ConsumeMessageHook<K> consumeHook);
 
 }

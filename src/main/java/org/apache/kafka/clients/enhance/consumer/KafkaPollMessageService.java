@@ -40,7 +40,7 @@ class KafkaPollMessageService<K> extends ShutdownableThread {
         this.consumeServiceLock = consumeServiceLock;
     }
 
-    public void stopPollMessage() {
+    public void stopPollingMessage() {
         consumeServiceLock.lock();
         try {
             safeConsumer.pause(safeConsumer.assignment());
@@ -52,7 +52,7 @@ class KafkaPollMessageService<K> extends ShutdownableThread {
         }
     }
 
-    public void resumePollMessage() {
+    public void resumePollingMessage() {
         consumeServiceLock.lock();
         try {
             safeConsumer.resume(safeConsumer.assignment());

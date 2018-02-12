@@ -31,7 +31,7 @@ public class KafkaPushConsumerTest {
         props.put("enable.auto.commit", "true");
         props.put("auto.commit.interval.ms", "1000");
 
-        consumer = new KafkaPushConsumer<String>(props, String.class);
+        consumer = new KafkaPushConsumer<>(props, String.class);
         consumer.consumeSetting()
                 .consumeBatchSize(10)
                 .consumeModel(ConsumeGroupModel.GROUP_CLUSTERING)
@@ -40,7 +40,6 @@ public class KafkaPushConsumerTest {
         final AtomicInteger total = new AtomicInteger(0);
         final Map<String, Integer> calc = new HashMap<>();
         final Object lock = new Object();
-
 
         consumer.registerHandler(new ConcurrentMessageHandler<String>() {
             @Override

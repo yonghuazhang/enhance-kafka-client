@@ -320,12 +320,12 @@ public abstract class AbsConsumeService<K> implements ConsumeService<K> {
 
     @Override
     public void suspend() {
-        pollService.stopPollMessage();
+        pollService.stopPollingMessage();
     }
 
     @Override
     public void resume() {
-        pollService.resumePollMessage();
+        pollService.resumePollingMessage();
     }
 
     public void dispatchTaskLater(final AbsConsumeTaskRequest<K> requestTask, final long timeout, final TimeUnit unit) {

@@ -93,4 +93,58 @@ public final class ProducerClientContext<K> {
         innerProducerConfig.put(ProducerConfig.MAX_IN_FLIGHT_REQUESTS_PER_CONNECTION, String.valueOf(maxInFlight));
         return this;
     }
+
+    public ProducerClientContext maxRequestByteSize(int maxRequestByteSize) {
+        innerProducerConfig.put(ProducerConfig.MAX_REQUEST_SIZE_CONFIG, String.valueOf(maxRequestByteSize));
+        return this;
+    }
+
+    public ProducerClientContext maxBlockMs(long maxBlockMs) {
+        innerProducerConfig.put(ProducerConfig.MAX_BLOCK_MS_CONFIG, String.valueOf(maxBlockMs));
+        return this;
+    }
+
+    public ProducerClientContext acks(String acks) {
+        innerProducerConfig.put(ProducerConfig.ACKS_CONFIG, acks);
+        return this;
+    }
+
+    public ProducerClientContext bufferMemory(long bufferSize) {
+        innerProducerConfig.put(ProducerConfig.BUFFER_MEMORY_CONFIG, String.valueOf(bufferSize));
+        return this;
+    }
+
+    public ProducerClientContext retries(int retryTimes) {
+        innerProducerConfig.put(ProducerConfig.RETRIES_CONFIG, retryTimes);
+        return this;
+    }
+
+    public ProducerClientContext compressionType(String type) {
+        innerProducerConfig.put(ProducerConfig.COMPRESSION_TYPE_CONFIG, type);
+        return this;
+    }
+
+    public ProducerClientContext batchSize(int batchSize) {
+        innerProducerConfig.put(ProducerConfig.BATCH_SIZE_CONFIG, String.valueOf(batchSize));
+        return this;
+    }
+
+    public ProducerClientContext clientId(String clientId) {
+        innerProducerConfig.put(ProducerConfig.CLIENT_ID_CONFIG, clientId);
+        return this;
+    }
+
+    public ProducerClientContext maxIdleMsForConnections(long idleMs) {
+        innerProducerConfig.put(ProducerConfig.CONNECTIONS_MAX_IDLE_MS_CONFIG, String.valueOf(idleMs));
+        return this;
+    }
+
+    public ProducerClientContext lingerMs(long lingerMs) {
+        innerProducerConfig.put(ProducerConfig.LINGER_MS_CONFIG, String.valueOf(lingerMs));
+        return this;
+    }
+
+    Map<String, Object> getProducerConfig(){
+        return this.innerProducerConfig;
+    }
 }

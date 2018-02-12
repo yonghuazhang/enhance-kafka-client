@@ -54,6 +54,10 @@ public class ExtMessage<K> {
         return msgKey;
     }
 
+    public void setMsgKey(K msgKey) {
+        this.msgKey = msgKey;
+    }
+
     public long getStoreTimeMs() {
         return storeTimeMs;
     }

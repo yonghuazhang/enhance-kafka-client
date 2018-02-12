@@ -1,8 +1,8 @@
 package org.apache.kafka.clients.enhance.consumer;
 
+import org.apache.kafka.clients.enhance.AbsExtMessageFilter;
 import org.apache.kafka.clients.enhance.ExtMessage;
 import org.apache.kafka.clients.enhance.ExtMessageEncoder;
-import org.apache.kafka.clients.enhance.AbsExtMessageFilter;
 import org.apache.kafka.clients.enhance.Utility;
 import org.apache.kafka.clients.enhance.consumer.listener.ConsumeMessageHook;
 import org.apache.kafka.clients.enhance.consumer.listener.MessageHandler;
@@ -203,7 +203,8 @@ public class KafkaPushConsumer<K> implements ConsumeOperator<K> {
                 }
                 safeConsumer = new EnhanceConsumer<>(clientContext.getInternalConsumerProps(),
                         clientContext.keyDeserializer());
-                innerSender = new KafkaProducer<>(clientContext.getInternalProducerProps(), clientContext.keySerializer(), new ExtMessageEncoder<K>());
+                innerSender = new KafkaProducer<>(clientContext.getInternalProducerProps(),
+                        clientContext.keySerializer(), new ExtMessageEncoder<K>());
 
                 //根据消费顺序性选择不同的服务
                 switch (clientContext.consumeType()) {
@@ -291,26 +292,26 @@ public class KafkaPushConsumer<K> implements ConsumeOperator<K> {
     }
 
     @Override
-    public void registerHandler(MessageHandler handler) {
+    public void registerHandler(MessageHandler<K, ?> handler) {
         this.clientContext.messageHandler(handler);
     }
 
     @Override
-    public void addConsumeHook(ConsumeMessageHook consumeHook) {
+    public void addConsumeHook(ConsumeMessageHook<K> consumeHook) {
         this.clientContext.addConsumeHook(consumeHook);
     }
 
     @Override
     public void suspend() {
         if (isRunning && null != consumeService) {
-
+            consumeService.suspend();
         }
     }
 
     @Override
     public void resume() {
-        if (isRunning && null != consumeService){
-
+        if (isRunning && null != consumeService) {
+            consumeService.resume();
         }
     }
 

@@ -5,6 +5,7 @@ import org.apache.kafka.clients.producer.KafkaProducer;
 
 import java.util.Map;
 import java.util.Properties;
+import java.util.concurrent.TimeUnit;
 
 public class EnhanceProducer<K> implements ProduceOperator<K> {
 
@@ -12,10 +13,40 @@ public class EnhanceProducer<K> implements ProduceOperator<K> {
     private final ProducerClientContext<K> clientContext = new ProducerClientContext<>();
 
     public EnhanceProducer(Map<String, Object> configs) {
-        super(configs);
+
     }
 
     public EnhanceProducer(Properties properties) {
         super(properties);
+    }
+
+    @Override
+    public String clientId() {
+        return null;
+    }
+
+    @Override
+    public void start() {
+
+    }
+
+    @Override
+    public void shutdownNow() {
+
+    }
+
+    @Override
+    public void shutdown(long timeout, TimeUnit unit) {
+
+    }
+
+    @Override
+    public void suspend() {
+
+    }
+
+    @Override
+    public void resume() {
+
     }
 }

@@ -34,7 +34,6 @@ public final class ConsumeClientContext<K> {
     private static final Logger logger = LoggerFactory.getLogger(ConsumeClientContext.class);
     private static final String INNER_PRODUCER_NAME_SUFFIX = "_inner_producer";
 
-    public static final int INVALID_PROPERTY_VALUE = Integer.MIN_VALUE;
     public static final int DEFAULT_CONSUME_BATCH_SIZE = 1;
     public static final long TIME_WAIT_FOR_POLL_REC_MS = 200L;
     public static final long DEFAULT_OFFSET_STORE_INTERVALS = 5000L;
@@ -50,7 +49,7 @@ public final class ConsumeClientContext<K> {
     private volatile int consumeBatchSize = DEFAULT_CONSUME_BATCH_SIZE;
     private int consumeCoreThreadNum = Utility.getCpuCores();
     private int consumeQueueSize = consumeCoreThreadNum * 256;
-    private int consumeRequestTimeoutMs = INVALID_PROPERTY_VALUE;
+
     private Set<String> subTopics = Collections.synchronizedSet(new HashSet<String>());
     private volatile AbsExtMessageFilter<K> messageFilter;
     private volatile MessageHandler<K, ?> messageHandler;
@@ -64,11 +63,6 @@ public final class ConsumeClientContext<K> {
     private long maxMessageDealTimeMs = DEFAULT_MAX_MESSAGE_DEAL_TIME_MS;
 
     private Serializer<K> keySerializer = null;
-    private int producerRequestTimeoutMs = INVALID_PROPERTY_VALUE;
-    private int producerMaxBlockMs = INVALID_PROPERTY_VALUE;
-    private int producerAcks = INVALID_PROPERTY_VALUE;
-    private int producerRetries = INVALID_PROPERTY_VALUE;
-    private int producerBatchSize = INVALID_PROPERTY_VALUE;
 
     public ConsumeClientContext clientTaskRetryBackoffMs(long backoffTime, TimeUnit unit) {
         try {
@@ -107,7 +101,7 @@ public final class ConsumeClientContext<K> {
         return this.consumeHooks;
     }
 
-    public ConsumeClientContext messageHandler(MessageHandler messageHandler) {
+    public ConsumeClientContext messageHandler(MessageHandler<K, ?> messageHandler) {
         ConsumeType handlerConsumeType = CONSUME_UNKNOWN;
         if (messageHandler instanceof ConcurrentMessageHandler) {
             handlerConsumeType = CONSUME_CONCURRENT;
@@ -239,11 +233,6 @@ public final class ConsumeClientContext<K> {
             } else {
                 strategy = ExtResetStrategy.RESET_FROM_LATEST;
             }
-            if (consumeCfgKeys.contains(ConsumerConfig.REQUEST_TIMEOUT_MS_CONFIG)) {
-                consumeRequestTimeoutMs = Integer.valueOf((String) innerConsumeConfig.get(ConsumerConfig.REQUEST_TIMEOUT_MS_CONFIG));
-            } else {
-                consumeRequestTimeoutMs = 305000;
-            }
 
             if (consumeCfgKeys.contains(ConsumerConfig.GROUP_ID_CONFIG)) {
                 groupId = String.valueOf(innerConsumeConfig.get(ConsumerConfig.GROUP_ID_CONFIG));
@@ -254,48 +243,6 @@ public final class ConsumeClientContext<K> {
                 //refresh inner producer clientId
                 updateConfigByProp(innerProducerConfig, ProducerConfig.CLIENT_ID_CONFIG,
                         clientId + INNER_PRODUCER_NAME_SUFFIX);
-            }
-        } catch (Exception ex) {
-            logger.info("update consumer context error.", ex);
-        }
-
-        //update internal producer property
-        Set<String> producerCfgKeys = innerProducerConfig.keySet();
-
-        try {
-            if (producerCfgKeys.contains(ProducerConfig.ACKS_CONFIG)) {
-                String acksValue = (String) innerProducerConfig.get(ProducerConfig.ACKS_CONFIG);
-                try {
-                    producerAcks = Integer.valueOf(acksValue);
-                } catch (Exception ex) {
-                    producerAcks = -1;
-                }
-            } else {
-                producerAcks = -1;
-            }
-
-            if (producerCfgKeys.contains(ProducerConfig.REQUEST_TIMEOUT_MS_CONFIG)) {
-                producerRequestTimeoutMs = Integer.valueOf((String) innerProducerConfig.get(ProducerConfig.REQUEST_TIMEOUT_MS_CONFIG));
-            } else {
-                producerRequestTimeoutMs = 30 * 1000;
-            }
-
-            if (producerCfgKeys.contains(ProducerConfig.RETRIES_CONFIG)) {
-                producerRetries = Integer.valueOf((String) innerProducerConfig.get(ProducerConfig.RETRIES_CONFIG));
-            } else {
-                producerRetries = 3;
-            }
-
-            if (producerCfgKeys.contains(ProducerConfig.BATCH_SIZE_CONFIG)) {
-                producerBatchSize = Integer.valueOf((String) innerProducerConfig.get(ProducerConfig.BATCH_SIZE_CONFIG));
-            } else {
-                producerBatchSize = 16384;
-            }
-
-            if (producerCfgKeys.contains(ProducerConfig.MAX_BLOCK_MS_CONFIG)) {
-                producerMaxBlockMs = Integer.valueOf((String) innerProducerConfig.get(ProducerConfig.MAX_BLOCK_MS_CONFIG));
-            } else {
-                producerMaxBlockMs = 60 * 1000;
             }
         } catch (Exception ex) {
             logger.info("update consumer context error.", ex);
@@ -363,59 +310,33 @@ public final class ConsumeClientContext<K> {
     }
 
     public ConsumeClientContext consumeRequestTimeout(int consumeRequestTimeoutMs) {
-        this.consumeRequestTimeoutMs = consumeRequestTimeoutMs;
         updateConfigByProp(innerConsumeConfig, ConsumerConfig.REQUEST_TIMEOUT_MS_CONFIG, consumeRequestTimeoutMs);
         return this;
     }
 
-    public ConsumeClientContext producerRequestTimeout(int producerRequestTimeoutMs) {
-        this.producerRequestTimeoutMs = producerRequestTimeoutMs;
+    ConsumeClientContext producerRequestTimeout(int producerRequestTimeoutMs) {
         updateConfigByProp(innerProducerConfig, ProducerConfig.REQUEST_TIMEOUT_MS_CONFIG, producerRequestTimeoutMs);
         return this;
     }
 
-    public int producerRequestTimeout() {
-        return this.producerRequestTimeoutMs;
-    }
-
-    public ConsumeClientContext producerAcks(int acks) {
-        this.producerAcks = acks;
+    ConsumeClientContext producerAcks(int acks) {
         updateConfigByProp(innerProducerConfig, ProducerConfig.ACKS_CONFIG, acks);
         return this;
     }
 
-    public int producerAcks() {
-        return this.producerAcks;
-    }
-
-    public ConsumeClientContext producerRetries(int retries) {
-        this.producerRetries = retries;
+    ConsumeClientContext producerRetries(int retries) {
         updateConfigByProp(innerProducerConfig, ProducerConfig.RETRIES_CONFIG, retries);
         return this;
     }
 
-    public int producerRetries() {
-        return this.producerRetries;
-    }
-
-    public ConsumeClientContext producerBatchSize(int batchSize) {
-        this.producerBatchSize = batchSize;
+    ConsumeClientContext producerBatchSize(int batchSize) {
         updateConfigByProp(innerProducerConfig, ProducerConfig.BATCH_SIZE_CONFIG, batchSize);
         return this;
     }
 
-    public int producerBatchSize() {
-        return this.producerBatchSize;
-    }
-
-    public ConsumeClientContext producerMaxBlockMs(int maxBlockMs) {
-        this.producerMaxBlockMs = maxBlockMs;
+    ConsumeClientContext producerMaxBlockMs(int maxBlockMs) {
         updateConfigByProp(innerProducerConfig, ProducerConfig.MAX_BLOCK_MS_CONFIG, maxBlockMs);
         return this;
-    }
-
-    public int producerMaxBlockMs() {
-        return this.producerMaxBlockMs;
     }
 
     public ConsumeGroupModel consumeModel() {
@@ -434,19 +355,11 @@ public final class ConsumeClientContext<K> {
         return this.consumeQueueSize;
     }
 
-    public int consumeRequestTimeoutMs() {
-        return this.consumeRequestTimeoutMs;
-    }
-
-    public static boolean isValidValue(int value) {
-        return INVALID_PROPERTY_VALUE != value;
-    }
-
-    public Map<String, Object> getInternalProducerProps() {
+    Map<String, Object> getInternalProducerProps() {
         return Collections.unmodifiableMap(innerProducerConfig);
     }
 
-    public Map<String, Object> getInternalConsumerProps() {
+    Map<String, Object> getInternalConsumerProps() {
         return Collections.unmodifiableMap(innerConsumeConfig);
     }
 
