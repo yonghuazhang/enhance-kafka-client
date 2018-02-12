@@ -8,11 +8,11 @@ import org.apache.kafka.common.TopicPartition;
 
 import java.util.List;
 
-public class OrdinalConsumeTaskRequest<K> extends AbsConsumeTaskRequest<K> {
+public class OrdinalConsumeTaskRequest<K> extends AbstractConsumeTaskRequest<K> {
     private final OrdinalConsumeHandlerContext consumeContext;
     private final OrdinalMessageHandler<K> handler;
 
-    public OrdinalConsumeTaskRequest(AbsConsumeService<K> service, PartitionDataManager manager,
+    public OrdinalConsumeTaskRequest(AbstractConsumeService<K> service, PartitionDataManager manager,
                                      List<ExtMessage<K>> extMessages, TopicPartition topicPartition,
                                      ConsumeClientContext<K> clientContext, OrdinalConsumeHandlerContext consumeContext,
                                      OrdinalMessageHandler<K> handler) {

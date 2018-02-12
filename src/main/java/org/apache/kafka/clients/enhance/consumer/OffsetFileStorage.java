@@ -24,7 +24,7 @@ import java.util.regex.Pattern;
  * topic2 2 12222
  * Created by steven03.zhang on 2018/2/6.
  */
-public class OffsetFileStorage<K> extends AbsOffsetStorage<K> {
+public class OffsetFileStorage<K> extends AbstractOffsetStorage<K> {
     private static final Pattern OFFSET_FILE_STORE_PATTERN = Pattern.compile("^(?<topic>\\S+)\\s(?<partition>\\d+)\\s(?<offset>\\d+)$",
             Pattern.MULTILINE | Pattern.CASE_INSENSITIVE);
     private final String offsetFilePath;

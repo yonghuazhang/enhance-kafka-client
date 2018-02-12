@@ -20,7 +20,7 @@ import static org.apache.kafka.clients.enhance.ExtMessageDef.PROPERTY_REAL_PARTI
 import static org.apache.kafka.clients.enhance.ExtMessageDef.PROPERTY_REAL_STORE_TIME;
 import static org.apache.kafka.clients.enhance.ExtMessageDef.PROPERTY_REAL_TOPIC;
 
-public class ConcurrentConsumeTaskRequest<K> extends AbsConsumeTaskRequest<K> {
+public class ConcurrentConsumeTaskRequest<K> extends AbstractConsumeTaskRequest<K> {
     private static final AtomicLong requestIdGenerator = new AtomicLong(0L);
     private final long requestId = requestIdGenerator.incrementAndGet();
     private final ConcurrentConsumeHandlerContext handlerContext;
@@ -28,7 +28,7 @@ public class ConcurrentConsumeTaskRequest<K> extends AbsConsumeTaskRequest<K> {
     private final String retryTopic;
     private final String deadletterTopic;
 
-    public ConcurrentConsumeTaskRequest(AbsConsumeService<K> service, PartitionDataManager manager,
+    public ConcurrentConsumeTaskRequest(AbstractConsumeService<K> service, PartitionDataManager manager,
                                         List<ExtMessage<K>> extMessages, TopicPartition topicPartition,
                                         ConsumeClientContext<K> clientContext) {
         super(service, manager, extMessages, topicPartition, clientContext);

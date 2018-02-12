@@ -1,6 +1,6 @@
 package org.apache.kafka.clients.enhance.consumer;
 
-import org.apache.kafka.clients.enhance.AbsExtMessageFilter;
+import org.apache.kafka.clients.enhance.AbstractExtMessageFilter;
 import org.apache.kafka.clients.enhance.ExtMessage;
 import org.apache.kafka.clients.enhance.ExtMessageEncoder;
 import org.apache.kafka.clients.enhance.Utility;
@@ -122,7 +122,7 @@ public class KafkaPushConsumer<K> implements ConsumeOperator<K> {
     }
 
     @Override
-    public void subscribe(String topic, AbsExtMessageFilter<K> filter) {
+    public void subscribe(String topic, AbstractExtMessageFilter<K> filter) {
         this.subscribe(Arrays.asList(topic), filter);
     }
 
@@ -132,7 +132,7 @@ public class KafkaPushConsumer<K> implements ConsumeOperator<K> {
     }
 
     @Override
-    public void subscribe(Collection<String> topics, AbsExtMessageFilter<K> filter) {
+    public void subscribe(Collection<String> topics, AbstractExtMessageFilter<K> filter) {
         clientContext.addTopic(topics);
         setMessageFilter(filter);
         if (isRunning && null != consumeService) {
@@ -140,7 +140,7 @@ public class KafkaPushConsumer<K> implements ConsumeOperator<K> {
         }
     }
 
-    private void setMessageFilter(AbsExtMessageFilter<K> filter) {
+    private void setMessageFilter(AbstractExtMessageFilter<K> filter) {
         if (null != filter) {
             clientContext.messageFilter(filter);
         } else {

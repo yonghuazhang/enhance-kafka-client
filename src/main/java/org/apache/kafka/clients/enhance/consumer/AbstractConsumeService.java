@@ -28,8 +28,8 @@ import java.util.concurrent.ThreadPoolExecutor;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.locks.ReentrantLock;
 
-public abstract class AbsConsumeService<K> implements ConsumeService<K> {
-    protected static final Logger logger = LoggerFactory.getLogger(AbsConsumeService.class);
+public abstract class AbstractConsumeService<K> implements ConsumeService<K> {
+    protected static final Logger logger = LoggerFactory.getLogger(AbstractConsumeService.class);
     protected static final long SEND_MESSAGE_BACK_WAIT_TIMEOUT_MS = 3000L;
 
     private final ThreadPoolExecutor execTaskService;
@@ -41,7 +41,7 @@ public abstract class AbsConsumeService<K> implements ConsumeService<K> {
 
     protected final ReentrantLock syncLock = new ReentrantLock(true);
 
-    protected final AbsOffsetStorage offsetPersistor;
+    protected final AbstractOffsetStorage offsetPersistor;
     protected final EnhanceConsumer<K> safeConsumer;
     protected final KafkaProducer<K, ExtMessage<K>> innerSender;
     protected final PartitionDataManager<K, ExtMessage<K>> partitionDataManager;
@@ -49,9 +49,9 @@ public abstract class AbsConsumeService<K> implements ConsumeService<K> {
     protected final ConsumeClientContext<K> clientContext;
     protected volatile boolean isRunning = false;
 
-    public AbsConsumeService(final EnhanceConsumer<K> safeConsumer,
-                             final KafkaProducer<K, ExtMessage<K>> innerSender,
-                             final ConsumeClientContext<K> clientContext) {
+    public AbstractConsumeService(final EnhanceConsumer<K> safeConsumer,
+                                  final KafkaProducer<K, ExtMessage<K>> innerSender,
+                                  final ConsumeClientContext<K> clientContext) {
         this.safeConsumer = safeConsumer;
         this.innerSender = innerSender;
         this.clientContext = clientContext;
@@ -86,7 +86,7 @@ public abstract class AbsConsumeService<K> implements ConsumeService<K> {
 
     @Override
     public void start() {
-        logger.debug("[AbsConsumeService] start service.");
+        logger.debug("[AbstractConsumeService] start service.");
         syncLock.lock();
         try {
             if (!isRunning) {
@@ -118,7 +118,7 @@ public abstract class AbsConsumeService<K> implements ConsumeService<K> {
 
     @Override
     public void shutdown(long timeout, TimeUnit unit) {
-        logger.debug("[AbsConsumeService] start closing service.");
+        logger.debug("[AbstractConsumeService] start closing service.");
         syncLock.lock();
         try {
             if (isRunning) {
@@ -128,25 +128,25 @@ public abstract class AbsConsumeService<K> implements ConsumeService<K> {
 
                 this.taskQueue.clear();
                 if (0 >= timeout) {
-                    logger.debug("[AbsConsumeService] is isRunning at once.");
+                    logger.debug("[AbstractConsumeService] is isRunning at once.");
                     this.execTaskService.shutdownNow();
                     this.scheduleExecTaskService.shutdownNow();
                 } else {
-                    logger.debug("[AbsConsumeService] awaitTermination for [{}] ms.", unit.toMillis(timeout));
+                    logger.debug("[AbstractConsumeService] awaitTermination for [{}] ms.", unit.toMillis(timeout));
                     this.execTaskService.shutdown();
                     this.scheduleExecTaskService.shutdown();
                     try {
                         this.execTaskService.awaitTermination(timeout, unit);
                         this.scheduleExecTaskService.awaitTermination(timeout, unit);
                     } catch (InterruptedException e) {
-                        logger.warn("[AbsConsumeService] interrupted exception. due to ", e);
+                        logger.warn("[AbstractConsumeService] interrupted exception. due to ", e);
                     }
                 }
 
                 offsetPersistor.shutdown();
             }
         } catch (Throwable e) {
-            logger.warn("[AbsConsumeService] close error. due to ", e);
+            logger.warn("[AbstractConsumeService] close error. due to ", e);
         } finally {
             syncLock.unlock();
         }
@@ -157,7 +157,7 @@ public abstract class AbsConsumeService<K> implements ConsumeService<K> {
         try {
             execTaskService.setCorePoolSize(coreThreadNum);
         } catch (IllegalArgumentException e) {
-            logger.warn("[AbsConsumeService] update consuming thread-pool coreThread error. due to ", e);
+            logger.warn("[AbstractConsumeService] update consuming thread-pool coreThread error. due to ", e);
         }
     }
 
@@ -172,11 +172,11 @@ public abstract class AbsConsumeService<K> implements ConsumeService<K> {
     }
 
     @Override
-    public void submitConsumeRequest(AbsConsumeTaskRequest<K> requestTask) {
+    public void submitConsumeRequest(AbstractConsumeTaskRequest<K> requestTask) {
         try {
             dispatchTaskAtOnce(requestTask);
         } catch (RejectedExecutionException e) {
-            logger.warn("[AbsConsumeService-submitConsumeRequest] task is too much. and wait 3s and dispatch again.");
+            logger.warn("[AbstractConsumeService-submitConsumeRequest] task is too much. and wait 3s and dispatch again.");
             dispatchTaskLater(requestTask, clientContext.clientTaskRetryBackoffMs(), TimeUnit.MILLISECONDS);
         }
     }
@@ -328,7 +328,7 @@ public abstract class AbsConsumeService<K> implements ConsumeService<K> {
         pollService.resumePollingMessage();
     }
 
-    public void dispatchTaskLater(final AbsConsumeTaskRequest<K> requestTask, final long timeout, final TimeUnit unit) {
+    public void dispatchTaskLater(final AbstractConsumeTaskRequest<K> requestTask, final long timeout, final TimeUnit unit) {
         try {
             scheduleExecTaskService.schedule(new Runnable() {
                 @Override
@@ -349,7 +349,7 @@ public abstract class AbsConsumeService<K> implements ConsumeService<K> {
     }
 
     //maybe throw RejectedExecutionException
-    public Future<ConsumeTaskResponse> dispatchTaskAtOnce(AbsConsumeTaskRequest<K> requestTask) {
+    public Future<ConsumeTaskResponse> dispatchTaskAtOnce(AbstractConsumeTaskRequest<K> requestTask) {
         Future<ConsumeTaskResponse> responseFuture = null;
         if (null != requestTask) {
             responseFuture = execTaskService.submit(requestTask);

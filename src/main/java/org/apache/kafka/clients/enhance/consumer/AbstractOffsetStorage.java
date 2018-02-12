@@ -26,8 +26,8 @@ import static org.apache.kafka.clients.enhance.consumer.ExtResetStrategy.RESET_F
 /**
  * abstract GroupOffsetPersistor.
  */
-public abstract class AbsOffsetStorage<K> implements ConsumerRebalanceListener {
-    protected static final Logger logger = LoggerFactory.getLogger(AbsOffsetStorage.class);
+public abstract class AbstractOffsetStorage<K> implements ConsumerRebalanceListener {
+    protected static final Logger logger = LoggerFactory.getLogger(AbstractOffsetStorage.class);
 
     private static final String LOCAL_OFFSETS_STORE_NAME = "local-offset-store.dat";
     public static final OffsetAndMetadata INVILID_OFFSET_META = new OffsetAndMetadata(INVALID_OFFSET_VALUE);
@@ -41,8 +41,8 @@ public abstract class AbsOffsetStorage<K> implements ConsumerRebalanceListener {
     private final Timer storeTimer = new Timer();
     private final TimerTask offsetStoreTask = new OffsetStoreTask();
 
-    protected AbsOffsetStorage(EnhanceConsumer<K> safeConsumer, PartitionDataManager partitionDataManager,
-                               ConsumeClientContext clientContext, LoadOffsetType loadType) {
+    protected AbstractOffsetStorage(EnhanceConsumer<K> safeConsumer, PartitionDataManager partitionDataManager,
+                                    ConsumeClientContext clientContext, LoadOffsetType loadType) {
         this.loadType = loadType;
         this.safeConsumer = safeConsumer;
         this.partitionDataManager = partitionDataManager;

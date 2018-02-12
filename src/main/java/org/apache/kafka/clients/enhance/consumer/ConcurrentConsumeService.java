@@ -20,7 +20,7 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
 
-public class ConcurrentConsumeService<K> extends AbsConsumeService<K> {
+public class ConcurrentConsumeService<K> extends AbstractConsumeService<K> {
     private static final Logger logger = LoggerFactory.getLogger(ConcurrentConsumeService.class);
 
     private final ConcurrentHashMap<Long, ConcurrentConsumeTaskRequest<K>> requestMap = new ConcurrentHashMap<>();

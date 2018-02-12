@@ -1,7 +1,6 @@
 package org.apache.kafka.clients.enhance.consumer;
 
 import org.apache.kafka.clients.consumer.ConsumerRebalanceListener;
-import org.apache.kafka.clients.enhance.AbsExtMessageFilter;
 import org.apache.kafka.clients.enhance.ExtMessage;
 import org.apache.kafka.common.TopicPartition;
 
@@ -25,7 +24,7 @@ public interface ConsumeService<K> {
 
     int getQueueSize();
 
-    void submitConsumeRequest(final AbsConsumeTaskRequest<K> requestTask);
+    void submitConsumeRequest(final AbstractConsumeTaskRequest<K> requestTask);
 
     boolean sendMessageBack(final String topic, final ExtMessage<K> msg, final int delayLevel);
 

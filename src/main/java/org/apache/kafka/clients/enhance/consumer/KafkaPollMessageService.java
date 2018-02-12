@@ -2,7 +2,7 @@ package org.apache.kafka.clients.enhance.consumer;
 
 import org.apache.kafka.clients.consumer.ConsumerRecord;
 import org.apache.kafka.clients.consumer.ConsumerRecords;
-import org.apache.kafka.clients.enhance.AbsExtMessageFilter;
+import org.apache.kafka.clients.enhance.AbstractExtMessageFilter;
 import org.apache.kafka.clients.enhance.ExtMessage;
 import org.apache.kafka.clients.enhance.ShutdownableThread;
 import org.apache.kafka.common.KafkaException;
@@ -107,7 +107,7 @@ class KafkaPollMessageService<K> extends ShutdownableThread {
     }
 
     private ConsumerRecords<K, ExtMessage<K>> filterMessage(ConsumerRecords<K, ExtMessage<K>> records,
-                                                            AbsExtMessageFilter<K> filter) {
+                                                            AbstractExtMessageFilter<K> filter) {
         if (null == records || records.isEmpty()) return records;
         if (filter.isPermitAll()) return records;
 

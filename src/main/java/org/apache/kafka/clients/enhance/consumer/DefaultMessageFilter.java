@@ -1,13 +1,13 @@
 package org.apache.kafka.clients.enhance.consumer;
 
-import org.apache.kafka.clients.enhance.AbsExtMessageFilter;
+import org.apache.kafka.clients.enhance.AbstractExtMessageFilter;
 import org.apache.kafka.clients.enhance.ExtMessage;
 import org.apache.kafka.common.header.Headers;
 
 import java.util.Collection;
 import java.util.regex.Pattern;
 
-public class DefaultMessageFilter<K> extends AbsExtMessageFilter<K> {
+public class DefaultMessageFilter<K> extends AbstractExtMessageFilter<K> {
     private final Pattern filterPattern;
 
     public DefaultMessageFilter(String sPat) {

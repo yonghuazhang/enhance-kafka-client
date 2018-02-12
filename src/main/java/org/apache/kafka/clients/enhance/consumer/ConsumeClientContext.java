@@ -1,7 +1,7 @@
 package org.apache.kafka.clients.enhance.consumer;
 
 import org.apache.kafka.clients.consumer.ConsumerConfig;
-import org.apache.kafka.clients.enhance.AbsExtMessageFilter;
+import org.apache.kafka.clients.enhance.AbstractExtMessageFilter;
 import org.apache.kafka.clients.enhance.Utility;
 import org.apache.kafka.clients.enhance.consumer.listener.ConcurrentMessageHandler;
 import org.apache.kafka.clients.enhance.consumer.listener.ConsumeMessageHook;
@@ -51,7 +51,7 @@ public final class ConsumeClientContext<K> {
     private int consumeQueueSize = consumeCoreThreadNum * 256;
 
     private Set<String> subTopics = Collections.synchronizedSet(new HashSet<String>());
-    private volatile AbsExtMessageFilter<K> messageFilter;
+    private volatile AbstractExtMessageFilter<K> messageFilter;
     private volatile MessageHandler<K, ?> messageHandler;
     private final ConsumeMessageHooks<K> consumeHooks = new ConsumeMessageHooks<>();
     private Deserializer<K> keyDeserializer = null;
@@ -272,12 +272,12 @@ public final class ConsumeClientContext<K> {
         return this.consumeType;
     }
 
-    public ConsumeClientContext messageFilter(AbsExtMessageFilter<K> messageFilter) {
+    public ConsumeClientContext messageFilter(AbstractExtMessageFilter<K> messageFilter) {
         this.messageFilter = messageFilter;
         return this;
     }
 
-    public AbsExtMessageFilter<K> messageFilter() {
+    public AbstractExtMessageFilter<K> messageFilter() {
         return messageFilter;
     }
 

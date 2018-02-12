@@ -2,7 +2,7 @@ package org.apache.kafka.clients.enhance.consumer.listener;
 
 import org.apache.kafka.common.TopicPartition;
 
-public class OrdinalConsumeHandlerContext extends AbsConsumeHandlerContext {
+public class OrdinalConsumeHandlerContext extends AbstractConsumeHandlerContext {
 
     private boolean autoCommit;
     private long suspendTimeInMs;

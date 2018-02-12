@@ -4,12 +4,12 @@ import org.apache.kafka.common.TopicPartition;
 
 import java.util.BitSet;
 
-public abstract class AbsConsumeHandlerContext {
+public abstract class AbstractConsumeHandlerContext {
     private final TopicPartition tp;
     private final long beginOffset;
     private final BitSet batchConsumeFlags;
 
-    public AbsConsumeHandlerContext(TopicPartition tp, long beginOffset, int bitSize) {
+    public AbstractConsumeHandlerContext(TopicPartition tp, long beginOffset, int bitSize) {
         this.tp = tp;
         this.beginOffset = beginOffset;
         this.batchConsumeFlags = new BitSet(bitSize);

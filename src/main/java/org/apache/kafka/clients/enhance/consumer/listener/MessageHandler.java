@@ -4,6 +4,6 @@ import org.apache.kafka.clients.enhance.ExtMessage;
 
 import java.util.List;
 
-public interface MessageHandler<K, C extends AbsConsumeHandlerContext> {
+public interface MessageHandler<K, C extends AbstractConsumeHandlerContext> {
     ConsumeStatus consumeMessage(List<ExtMessage<K>> message, C consumeContext) throws InterruptedException;
 }

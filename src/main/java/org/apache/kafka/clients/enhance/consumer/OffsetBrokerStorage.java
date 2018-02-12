@@ -6,7 +6,7 @@ import org.apache.kafka.common.TopicPartition;
 
 import java.util.Map;
 
-public class OffsetBrokerStorage<K> extends AbsOffsetStorage<K> {
+public class OffsetBrokerStorage<K> extends AbstractOffsetStorage<K> {
 
 
     protected OffsetBrokerStorage(EnhanceConsumer<K> safeConsumer, PartitionDataManager partitionDataManager, ConsumeClientContext clientContext) {
