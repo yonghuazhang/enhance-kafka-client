@@ -53,7 +53,7 @@ public enum DelayedMessageTopic {
     }
 
     // level from 1 to 20
-    public String getDelayedTopicByLevel(final int level, final String prefix, final String suffix) {
+    public static String getDelayedTopicNameByLevel(final int level, final String prefix, final String suffix) {
         DelayedMessageTopic[] allDelayedTopics = DelayedMessageTopic.values();
         int idx = level - 1;
         if (idx < 0) {

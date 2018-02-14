@@ -1,43 +1,36 @@
 package org.apache.kafka.clients.enhance.consumer.listener;
 
+import org.apache.kafka.clients.consumer.ConsumerInterceptor;
+import org.apache.kafka.clients.consumer.internals.ConsumerInterceptors;
 import org.apache.kafka.clients.enhance.ExtMessage;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 import java.util.ArrayList;
-import java.util.Collections;
 import java.util.List;
 
-public class ConsumeMessageHooks<K> {
-    private final static Logger logger = LoggerFactory.getLogger(ConsumeMessageHooks.class);
-    private final List<ConsumeMessageHook<K>> hooks;
+public class ConsumeMessageHooks<K> extends ConsumerInterceptors<K, ExtMessage<K>> {
 
     public ConsumeMessageHooks() {
-        this.hooks = Collections.synchronizedList(new ArrayList<ConsumeMessageHook<K>>());
+        super(new ArrayList<ConsumerInterceptor<K, ExtMessage<K>>>());
     }
 
-    public List<ExtMessage<K>> execConsumeBefore(ConsumeHookContext hookContext,
-                                                 List<ExtMessage<K>> messages) {
-        if (!this.hooks.isEmpty()) {
-
+    public void addConsumeMessageHook(final ConsumerInterceptor<K, ExtMessage<K>> interceptor) {
+        if (!interceptors.contains(interceptor)) {
+            interceptors.add(interceptor);
         }
-        return null;
     }
 
-    public List<ExtMessage<K>> execConsumeAfter(ConsumeHookContext hookContext,
-                                                List<ExtMessage<K>> messages) {
-        if (!this.hooks.isEmpty()) {
-
+    public void addConsumeMessageHook(final List<ConsumerInterceptor<K, ExtMessage<K>>> interceptors) {
+        for (ConsumerInterceptor<K, ExtMessage<K>> ci : interceptors) {
+            addConsumeMessageHook(ci);
         }
-        return null;
-    }
-
-    public void addMessageHook(ConsumeMessageHook<K> hook) {
-        this.hooks.add(hook);
     }
 
     public void clearHooks() {
-        this.hooks.clear();
+        this.interceptors.clear();
+    }
+
+    public boolean isEmpty() {
+        return this.interceptors.isEmpty();
     }
 
 }

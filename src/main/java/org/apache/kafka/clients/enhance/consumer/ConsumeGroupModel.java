@@ -16,9 +16,11 @@ public enum ConsumeGroupModel {
     }
 
     public static ConsumeGroupModel forName(String name) {
-        for (ConsumeGroupModel t : values())
-            if (t.name.equals(name))
+        for (ConsumeGroupModel t : values()) {
+            if (t.name.equals(name)) {
                 return t;
+            }
+        }
         throw new NoSuchElementException("Invalid Consumer Model " + name);
     }
 

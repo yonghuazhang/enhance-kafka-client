@@ -206,6 +206,11 @@ public class KafkaPushConsumer<K> implements ConsumeOperator<K> {
                 innerSender = new KafkaProducer<>(clientContext.getInternalProducerProps(),
                         clientContext.keySerializer(), new ExtMessageEncoder<K>());
 
+                if (!clientContext.consumeHooks().isEmpty()) {
+                    logger.info("KafkaPushConsumer add consume-message-hooks.");
+                    safeConsumer.addConsumeMessageHooks(clientContext.consumeHooks());
+                }
+
                 //根据消费顺序性选择不同的服务
                 switch (clientContext.consumeType()) {
                     case CONSUME_ORDINAL:
@@ -298,10 +303,9 @@ public class KafkaPushConsumer<K> implements ConsumeOperator<K> {
 
     @Override
     public void addConsumeHook(ConsumeMessageHook<K> consumeHook) {
-        if (!isRunning) {
-            this.clientContext.addConsumeHook(consumeHook);
-        } else {
-            logger.warn("addConsumeHook must be executed before service run.");
+        clientContext.addConsumeHook(consumeHook);
+        if (isRunning && null != safeConsumer) {
+            safeConsumer.addConsumeMessageHooks(clientContext.consumeHooks());
         }
     }
 

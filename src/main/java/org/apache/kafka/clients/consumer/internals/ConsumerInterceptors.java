@@ -33,8 +33,8 @@ import java.util.Map;
  * and wraps calls to the chain of custom interceptors.
  */
 public class ConsumerInterceptors<K, V> implements Closeable {
-    private static final Logger log = LoggerFactory.getLogger(ConsumerInterceptors.class);
-    private final List<ConsumerInterceptor<K, V>> interceptors;
+    protected static final Logger log = LoggerFactory.getLogger(ConsumerInterceptors.class);
+    protected final List<ConsumerInterceptor<K, V>> interceptors;
 
     public ConsumerInterceptors(List<ConsumerInterceptor<K, V>> interceptors) {
         this.interceptors = interceptors;
@@ -98,6 +98,23 @@ public class ConsumerInterceptors<K, V> implements Closeable {
             } catch (Exception e) {
                 log.error("Failed to close consumer interceptor ", e);
             }
+        }
+    }
+
+    public List<ConsumerInterceptor<K, V>> getInterceptors() {
+        return interceptors;
+    }
+
+    public void addConsumerInterceptor(ConsumerInterceptor<K, V> interceptor) {
+        if (null != interceptor && !interceptors.contains(interceptor)) {
+            interceptors.add(interceptor);
+        }
+    }
+
+    public void addConsumerInterceptors(List<ConsumerInterceptor<K, V>> interceptors) {
+        if (null == interceptors && interceptors.isEmpty()) return;
+        for (ConsumerInterceptor<K, V> interceptor : interceptors) {
+            addConsumerInterceptor(interceptor);
         }
     }
 }

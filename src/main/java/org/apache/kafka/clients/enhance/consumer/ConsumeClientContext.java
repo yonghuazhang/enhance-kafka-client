@@ -68,7 +68,7 @@ public final class ConsumeClientContext<K> {
         try {
             clientTaskRetryBackoffMs = unit.toMillis(backoffTime);
         } catch (Exception ex) {
-            logger.warn("Setting retry backoff time failed, use default value. due to ", ex);
+            logger.warn("setting task retry backoff time failed, use default value. due to ", ex);
         }
         return this;
     }
@@ -81,7 +81,7 @@ public final class ConsumeClientContext<K> {
         try {
             maxMessageDealTimeMs = unit.toMillis(dealTime);
         } catch (Exception ex) {
-            logger.warn("Setting maxMessageDealTimeMs time failed, use default value. due to ", ex);
+            logger.warn("setting maxMessageDealTimeMs time failed, use default value. due to ", ex);
         }
         return this;
     }
@@ -92,7 +92,7 @@ public final class ConsumeClientContext<K> {
 
     public ConsumeClientContext addConsumeHook(ConsumeMessageHook<K> consumeHook) {
         if (null != consumeHook) {
-            consumeHooks.addMessageHook(consumeHook);
+            consumeHooks.addConsumeMessageHook(consumeHook);
         }
         return this;
     }
@@ -115,7 +115,7 @@ public final class ConsumeClientContext<K> {
             this.consumeType = handlerConsumeType;
             this.messageHandler = messageHandler;
         } else {
-            logger.warn("Consume type isn't matched, couldn't be changed in runtime.");
+            logger.warn("consume type isn't matched, couldn't be changed in runtime.");
         }
         return this;
     }

@@ -3,7 +3,7 @@ package org.apache.kafka.clients.enhance.producer;
 import org.apache.kafka.clients.consumer.OffsetAndMetadata;
 import org.apache.kafka.clients.enhance.ClientOperator;
 import org.apache.kafka.clients.enhance.ExtMessage;
-import org.apache.kafka.clients.enhance.consumer.listener.ConsumeMessageHook;
+import org.apache.kafka.clients.producer.Callback;
 import org.apache.kafka.clients.producer.RecordMetadata;
 import org.apache.kafka.common.PartitionInfo;
 import org.apache.kafka.common.TopicPartition;
@@ -24,10 +24,12 @@ public interface ProduceOperator<K> extends ClientOperator {
 
     void abortTransaction();
 
-    void sendGroupOffsetsToTransaction(Map<TopicPartition,OffsetAndMetadata> offsets, String groupId);
+    void sendGroupOffsetsToTransaction(Map<TopicPartition, OffsetAndMetadata> offsets, String groupId);
 
     Future<RecordMetadata> sendMessage(ExtMessage<K> message);
 
-    void addProducerHook(ConsumeMessageHook consumeHook);
+    Future<RecordMetadata> sendMessage(ExtMessage<K> message, Callback callback);
+
+    void addSendMessageHook(SendMessageHook<K> sendHook);
 
 }

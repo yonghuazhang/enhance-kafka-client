@@ -22,6 +22,8 @@ import org.apache.kafka.clients.enhance.ClusterDescription;
 import org.apache.kafka.clients.enhance.ExtMessage;
 import org.apache.kafka.clients.enhance.ExtMessageEncoder;
 import org.apache.kafka.clients.enhance.ExtMessageUtils;
+import org.apache.kafka.clients.enhance.consumer.listener.ConsumeMessageHook;
+import org.apache.kafka.clients.enhance.consumer.listener.ConsumeMessageHooks;
 import org.apache.kafka.clients.enhance.exception.KafkaAdminException;
 import org.apache.kafka.common.Node;
 import org.apache.kafka.common.PartitionInfo;
@@ -585,6 +587,24 @@ class EnhanceConsumer<K> extends KafkaConsumer<K, ExtMessage<K>> implements Admi
             level = IsolationLevel.READ_UNCOMMITTED;
         }
         return this.subscriptions.partitionLag(tp, level);
+    }
+
+    void addConsumeMessageHook(ConsumeMessageHook<K> hook) {
+        kcLock.lock();
+        try {
+            this.interceptors.addConsumerInterceptor(hook);
+        } finally {
+            kcLock.unlock();
+        }
+    }
+
+    void addConsumeMessageHooks(ConsumeMessageHooks<K> hooks) {
+        kcLock.lock();
+        try {
+            this.interceptors.addConsumerInterceptors(hooks.getInterceptors());
+        } finally {
+            kcLock.unlock();
+        }
     }
 
 }

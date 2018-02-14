@@ -7,7 +7,7 @@ import java.util.List;
 /**
  * OrdinalMessageHandler
  */
-public interface OrdinalMessageHandler<K> extends MessageHandler<K, OrdinalConsumeHandlerContext> {
+public interface OrdinalMessageHandler<K> extends MessageHandler<K, OrdinalConsumeContext> {
     @Override
-    ConsumeStatus consumeMessage(List<ExtMessage<K>> message, OrdinalConsumeHandlerContext consumeContext) throws InterruptedException;
+    ConsumeStatus consumeMessage(List<ExtMessage<K>> message, OrdinalConsumeContext consumeContext) throws InterruptedException;
 }

@@ -122,7 +122,6 @@ public abstract class AbstractConsumeService<K> implements ConsumeService<K> {
         syncLock.lock();
         try {
             if (isRunning) {
-                isRunning = false;
                 pollService.shutdown();
                 dispatchService.shutdown();
 
@@ -144,6 +143,7 @@ public abstract class AbstractConsumeService<K> implements ConsumeService<K> {
                 }
 
                 offsetPersistor.shutdown();
+                isRunning = false;
             }
         } catch (Throwable e) {
             logger.warn("[AbstractConsumeService] close error. due to ", e);
@@ -198,7 +198,7 @@ public abstract class AbstractConsumeService<K> implements ConsumeService<K> {
 
     private Set<TopicPartition> filterAssignedRetryTopic(Set<TopicPartition> origAssigned) {
         Set<TopicPartition> filterTopicPartitions = new HashSet<>();
-        for(TopicPartition tp : origAssigned) {
+        for (TopicPartition tp : origAssigned) {
             if (!tp.topic().equals(clientContext.retryTopicName())) {
                 filterTopicPartitions.add(tp);
             }

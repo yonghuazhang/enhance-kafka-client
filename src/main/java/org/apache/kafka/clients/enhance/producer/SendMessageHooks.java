@@ -41,11 +41,15 @@ public final class SendMessageHooks<K> extends ProducerInterceptors<K, ExtMessag
     }
 
     public void addSendMessageHook(final ProducerInterceptor<K, ExtMessage<K>> interceptor) {
-        this.interceptors.add(interceptor);
+        if (!interceptors.contains(interceptor)){
+            interceptors.add(interceptor);
+        }
     }
 
     public void addSendMessageHook(final List<ProducerInterceptor<K, ExtMessage<K>>> interceptors) {
-        this.interceptors.addAll(interceptors);
+        for (ProducerInterceptor<K, ExtMessage<K>> pi : interceptors) {
+            addSendMessageHook(pi);
+        }
     }
 
     public void clearHooks() {

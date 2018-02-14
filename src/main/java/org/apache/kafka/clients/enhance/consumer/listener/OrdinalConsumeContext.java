@@ -2,13 +2,13 @@ package org.apache.kafka.clients.enhance.consumer.listener;
 
 import org.apache.kafka.common.TopicPartition;
 
-public class OrdinalConsumeHandlerContext extends AbstractConsumeHandlerContext {
+public class OrdinalConsumeContext extends AbstractConsumeContext {
 
     private boolean autoCommit;
     private long suspendTimeInMs;
 
-    public OrdinalConsumeHandlerContext(TopicPartition tp, long ackOffset, int batchSize) {
-        super(tp, ackOffset, batchSize);
+    public OrdinalConsumeContext(TopicPartition tp, long ackOffset) {
+        super(tp, ackOffset);
         this.autoCommit = true;
         this.suspendTimeInMs = -1L;
     }

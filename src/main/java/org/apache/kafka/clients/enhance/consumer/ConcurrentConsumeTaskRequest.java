@@ -2,7 +2,7 @@ package org.apache.kafka.clients.enhance.consumer;
 
 import org.apache.kafka.clients.enhance.ExtMessage;
 import org.apache.kafka.clients.enhance.ExtMessageUtils;
-import org.apache.kafka.clients.enhance.consumer.listener.ConcurrentConsumeHandlerContext;
+import org.apache.kafka.clients.enhance.consumer.listener.ConcurrentConsumeContext;
 import org.apache.kafka.clients.enhance.consumer.listener.ConcurrentMessageHandler;
 import org.apache.kafka.clients.enhance.consumer.listener.ConsumeStatus;
 import org.apache.kafka.common.TopicPartition;
@@ -23,7 +23,7 @@ import static org.apache.kafka.clients.enhance.ExtMessageDef.PROPERTY_REAL_TOPIC
 public class ConcurrentConsumeTaskRequest<K> extends AbstractConsumeTaskRequest<K> {
     private static final AtomicLong requestIdGenerator = new AtomicLong(0L);
     private final long requestId = requestIdGenerator.incrementAndGet();
-    private final ConcurrentConsumeHandlerContext handlerContext;
+    private final ConcurrentConsumeContext handlerContext;
     private final ConcurrentMessageHandler<K> handler;
     private final String retryTopic;
     private final String deadletterTopic;
@@ -33,7 +33,7 @@ public class ConcurrentConsumeTaskRequest<K> extends AbstractConsumeTaskRequest<
                                         ConsumeClientContext<K> clientContext) {
         super(service, manager, extMessages, topicPartition, clientContext);
         long firstOffsetInBatch = messages.get(FIRST_MESSAGE_IDX).getOffset();
-        this.handlerContext = new ConcurrentConsumeHandlerContext(topicPartition, firstOffsetInBatch, clientContext.consumeBatchSize());
+        this.handlerContext = new ConcurrentConsumeContext(topicPartition, firstOffsetInBatch, clientContext.consumeBatchSize());
         this.handler = (ConcurrentMessageHandler<K>) clientContext.messageHandler();
         this.retryTopic = clientContext.retryTopicName();
         this.deadletterTopic = clientContext.deadLetterTopicName();
@@ -45,6 +45,10 @@ public class ConcurrentConsumeTaskRequest<K> extends AbstractConsumeTaskRequest<
 
     private ConcurrentConsumeService<K> getConsumeService() {
         return (ConcurrentConsumeService<K>) this.consumeService;
+    }
+
+    private String getDelayedTopicName(int delayLevel) {
+        return DelayedMessageTopic.getDelayedTopicNameByLevel(delayLevel, null, null);
     }
 
     @Override
@@ -66,17 +70,18 @@ public class ConcurrentConsumeTaskRequest<K> extends AbstractConsumeTaskRequest<
                         if (msg.getRetryCount() < MAX_RECONSUME_COUNT) {
                             updateMessageAttrBeforeRetrySendback(msg, delayLevel);
 
-                            boolean isLocalRetry = false;
+                            boolean shouldLocalRetry = false;
                             switch (clientContext.consumeModel()) {
                                 case GROUP_CLUSTERING:
-                                    isLocalRetry = consumeService.sendMessageBack(retryTopic, msg, msg.getDelayedLevel());
+                                    String delayedTopic = getDelayedTopicName(delayLevel);
+                                    shouldLocalRetry = consumeService.sendMessageBack(delayedTopic, msg, msg.getDelayedLevel());
                                     break;
                                 case GROUP_BROADCASTING:
                                 default:
                                     break;
                             }
 
-                            if (!isLocalRetry) {
+                            if (!shouldLocalRetry) {
                                 localRetryRecords.add(msg);
                             }
                         } else {
@@ -84,7 +89,7 @@ public class ConcurrentConsumeTaskRequest<K> extends AbstractConsumeTaskRequest<
                                 case GROUP_CLUSTERING:
                                     ((ConcurrentConsumeService) consumeService).createDeadLetterTopic();
                                     if (!consumeService.sendMessageBack(deadletterTopic, msg, 0)) {
-                                        logger.warn("sending dead letter message failed. please check it [{}].", msg);
+                                        logger.warn("sending dead letter message failed. please check message [{}], since it have retied many times.", msg);
                                     }
                                     break;
                                 case GROUP_BROADCASTING:

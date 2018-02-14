@@ -27,7 +27,7 @@ class KafkaPollMessageService<K> extends ShutdownableThread {
     private final ConsumeClientContext<K> clientContext;
     private final ReentrantLock consumeServiceLock;
 
-    private volatile boolean isRunning;
+    private volatile boolean isRunning = false;
     private volatile boolean isSuspend = false;
 
     public KafkaPollMessageService(String serviceName, EnhanceConsumer<K> safeConsumer,
@@ -46,7 +46,7 @@ class KafkaPollMessageService<K> extends ShutdownableThread {
             safeConsumer.pause(safeConsumer.assignment());
             isSuspend = true;
         } catch (Exception ex) {
-            logger.warn("[KafkaPollMessageService] suspend polling message error. due to ", ex);
+            logger.warn("KafkaPollMessageService suspend polling message error. due to ", ex);
         } finally {
             consumeServiceLock.unlock();
         }
@@ -56,9 +56,9 @@ class KafkaPollMessageService<K> extends ShutdownableThread {
         consumeServiceLock.lock();
         try {
             safeConsumer.resume(safeConsumer.assignment());
-            isSuspend =false;
+            isSuspend = false;
         } catch (Exception ex) {
-            logger.warn("[KafkaPollMessageService] resume polling message error. due to ", ex);
+            logger.warn("KafkaPollMessageService resume polling message error. due to ", ex);
         } finally {
             consumeServiceLock.unlock();
         }
@@ -68,36 +68,36 @@ class KafkaPollMessageService<K> extends ShutdownableThread {
     public void doWork() {
         while (isRunning) {
             try {
-                if (consumeServiceLock.tryLock(clientContext.pollMessageAwaitTimeoutMs(), TimeUnit.MILLISECONDS)) {
+                if (!isSuspend && consumeServiceLock.tryLock(clientContext.pollMessageAwaitTimeoutMs(), TimeUnit.MILLISECONDS)) {
                     try {
                         ConsumerRecords<K, ExtMessage<K>> records = safeConsumer.poll(clientContext.pollMessageAwaitTimeoutMs());
-                        logger.trace("[KafkaPollMessageService] retrieve no messages [{}] and topic partition {}.", records.isEmpty(), records.partitions());
+                        logger.debug("KafkaPollMessageService retrieve no messages [{}] and records count {}.", records.isEmpty(), records.count());
                         //filter messages
                         ConsumerRecords<K, ExtMessage<K>> filterMessages = filterMessage(records, clientContext.messageFilter());
                         Set<TopicPartition> needPausePartitions = partitionDataManager.saveConsumerRecords(filterMessages);
 
-                        if (!isSuspend) {
-                            Set<TopicPartition> pausedPartitions = safeConsumer.paused();
-                            if (!pausedPartitions.isEmpty()) {
-                                Set<TopicPartition> needResumePartitions = new HashSet<>();
-                                for (TopicPartition tp : pausedPartitions) {
-                                    if (!needPausePartitions.contains(tp)) {
-                                        needResumePartitions.add(tp);
-                                    }
-                                }
-                                if (!needResumePartitions.isEmpty()) {
-                                    safeConsumer.resume(needResumePartitions);
+                        Set<TopicPartition> pausedPartitions = safeConsumer.paused();
+                        if (!pausedPartitions.isEmpty()) {
+                            Set<TopicPartition> needResumePartitions = new HashSet<>();
+                            for (TopicPartition tp : pausedPartitions) {
+                                if (!needPausePartitions.contains(tp)) {
+                                    needResumePartitions.add(tp);
                                 }
                             }
-                            if (null != needPausePartitions && !needPausePartitions.isEmpty()) {
-                                safeConsumer.pause(needPausePartitions);
+                            if (!needResumePartitions.isEmpty()) {
+                                safeConsumer.resume(needResumePartitions);
                             }
+                        }
+                        if (null != needPausePartitions && !needPausePartitions.isEmpty()) {
+                            safeConsumer.pause(needPausePartitions);
                         }
                     } catch (Throwable t) {
                         logger.warn("KafkaPollMessageService error. due to ", t);
                     } finally {
                         consumeServiceLock.unlock();
                     }
+                } else {
+                    TimeUnit.MILLISECONDS.sleep(clientContext.pollMessageAwaitTimeoutMs());
                 }
             } catch (InterruptedException e) {
                 logger.warn("KafkaPollMessageService is interrupted.");
@@ -137,14 +137,14 @@ class KafkaPollMessageService<K> extends ShutdownableThread {
                     try {
                         super.start();
                     } catch (Exception e) {
-                        logger.warn("start [KafkaPollMessageService] service error. due to ", e);
+                        logger.warn("start KafkaPollMessageService service error. due to ", e);
                         shutdown();
-                        throw new KafkaException("start [KafkaPollMessageService] failed.");
+                        throw new KafkaException("start KafkaPollMessageService failed.");
                     }
                 }
             }
         } else {
-            logger.info("[KafkaPollMessageService] has been started.");
+            logger.info("KafkaPollMessageService has been started.");
         }
     }
 
@@ -160,7 +160,7 @@ class KafkaPollMessageService<K> extends ShutdownableThread {
                 }
             }
         } else {
-            logger.info("[KafkaPollMessageService] has been shutdown.");
+            logger.info("KafkaPollMessageService has been shutdown.");
         }
     }
 

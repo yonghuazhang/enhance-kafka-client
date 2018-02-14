@@ -215,7 +215,7 @@ public class ExtMessage<K> {
         return topic;
     }
 
-    void setTopic(String topic) {
+    public void setTopic(String topic) {
         this.topic = topic;
     }
 
@@ -223,7 +223,7 @@ public class ExtMessage<K> {
         return msgValue;
     }
 
-    void setMsgValue(byte[] msgValue) {
+    public void setMsgValue(byte[] msgValue) {
         this.msgValue = null == msgValue ? new byte[0] : msgValue;
     }
 

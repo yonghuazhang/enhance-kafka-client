@@ -1,6 +1,7 @@
 package org.apache.kafka.clients.enhance.producer;
 
 import org.apache.kafka.clients.enhance.ExtMessage;
+import org.apache.kafka.clients.enhance.ExtMessageEncoder;
 import org.apache.kafka.clients.producer.Callback;
 import org.apache.kafka.clients.producer.KafkaProducer;
 import org.apache.kafka.clients.producer.ProducerRecord;
@@ -22,34 +23,31 @@ class KafkaProducerProxy<K> extends KafkaProducer<K, ExtMessage<K>> {
     private final ReentrantReadWriteLock.ReadLock hookReadLock = hookLock.readLock();
 
     public KafkaProducerProxy(Map<String, Object> configs) {
-        super(configs);
+        this(configs, null);
     }
 
-    public KafkaProducerProxy(Map<String, Object> configs, Serializer<K> keySerializer, Serializer<ExtMessage<K>> valueSerializer) {
-        super(configs, keySerializer, valueSerializer);
+    public KafkaProducerProxy(Map<String, Object> configs, Serializer<K> keySerializer) {
+        super(configs, keySerializer, new ExtMessageEncoder<K>());
     }
 
     public KafkaProducerProxy(Properties properties) {
-        super(properties);
+        this(properties, null);
     }
 
-    public KafkaProducerProxy(Properties properties, Serializer<K> keySerializer, Serializer<ExtMessage<K>> valueSerializer) {
-        super(properties, keySerializer, valueSerializer);
+    public KafkaProducerProxy(Properties properties, Serializer<K> keySerializer) {
+        super(properties, keySerializer, new ExtMessageEncoder<K>());
     }
 
-    void addProducerMessageHook(SendMessageHook<K> hook) {
+    void addProducerMessageHooks(SendMessageHooks<K> hooks) {
         hookWriteLock.lock();
         try {
             if (null == this.interceptors) {
-                SendMessageHooks<K> tmpInterceptors = new SendMessageHooks<>();
-                tmpInterceptors.addSendMessageHook(hook);
-                this.interceptors = tmpInterceptors;
+                this.interceptors = hooks;
             } else if (interceptors instanceof SendMessageHooks) {
-                ((SendMessageHooks) this.interceptors).addSendMessageHook(hook);
+                ((SendMessageHooks) this.interceptors).addSendMessageHook(hooks.getInterceptors());
             } else {
-                SendMessageHooks<K> tmpInterceptors = new SendMessageHooks<>();
-                tmpInterceptors.addSendMessageHook(this.interceptors.getInterceptors());
-                this.interceptors = tmpInterceptors;
+                hooks.addSendMessageHook(this.interceptors.getInterceptors());
+                this.interceptors = hooks;
             }
         } finally {
             hookWriteLock.unlock();

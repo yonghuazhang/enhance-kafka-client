@@ -1,5 +1,6 @@
 package org.apache.kafka.clients.enhance.producer;
 
+import org.apache.kafka.clients.enhance.ExtMessageEncoder;
 import org.apache.kafka.clients.producer.ProducerConfig;
 import org.apache.kafka.common.serialization.Serializer;
 import org.slf4j.Logger;
@@ -46,6 +47,7 @@ public final class ProducerClientContext<K> {
                 logger.warn("[ProducerClientContext] Invalid property type: key = [{}], value = [{}].", key, originalConfig.get(key));
             }
         }
+        innerProducerConfig.put(ProducerConfig.VALUE_SERIALIZER_CLASS_CONFIG, ExtMessageEncoder.class.getName());
     }
 
     public boolean isTransactionProducer() {
@@ -58,6 +60,10 @@ public final class ProducerClientContext<K> {
         } catch (Exception e) {
             return false;
         }
+    }
+
+    public String clientId() {
+        return String.valueOf(innerProducerConfig.get(ProducerConfig.CLIENT_ID_CONFIG));
     }
 
     public ProducerClientContext setTransactionId(String transactionId) {
@@ -151,5 +157,9 @@ public final class ProducerClientContext<K> {
 
     public void addSendMessageHook(SendMessageHook<K> hook) {
         this.hooks.addSendMessageHook(hook);
+    }
+
+    public SendMessageHooks<K> getSendMessageHooks() {
+        return hooks;
     }
 }
