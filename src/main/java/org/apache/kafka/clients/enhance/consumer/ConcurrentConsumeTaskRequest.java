@@ -47,10 +47,6 @@ public class ConcurrentConsumeTaskRequest<K> extends AbstractConsumeTaskRequest<
         return (ConcurrentConsumeService<K>) this.consumeService;
     }
 
-    private String getDelayedTopicName(int delayLevel) {
-        return DelayedMessageTopic.getDelayedTopicNameByLevel(delayLevel, null, null);
-    }
-
     @Override
     public void processConsumeStatus(ConsumeStatus status) {
         List<Long> offsets = new ArrayList<>(messages.size());
@@ -73,8 +69,7 @@ public class ConcurrentConsumeTaskRequest<K> extends AbstractConsumeTaskRequest<
                             boolean shouldLocalRetry = false;
                             switch (clientContext.consumeModel()) {
                                 case GROUP_CLUSTERING:
-                                    String delayedTopic = getDelayedTopicName(delayLevel);
-                                    shouldLocalRetry = consumeService.sendMessageBack(delayedTopic, msg, msg.getDelayedLevel());
+                                    shouldLocalRetry = consumeService.sendMessageBack(retryTopic, msg, msg.getDelayedLevel());
                                     break;
                                 case GROUP_BROADCASTING:
                                 default:

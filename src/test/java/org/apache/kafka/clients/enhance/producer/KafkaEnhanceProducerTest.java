@@ -94,7 +94,7 @@ public class KafkaEnhanceProducerTest {
 
         ExtMessage<String> message = new ExtMessage<>();
         message.setTopic("test");
-        message.setMsgKey("aaac");
+        message.setMsgKey("1");
         message.setMsgValue("helloworld".getBytes());
 
         producer.beginTransaction();

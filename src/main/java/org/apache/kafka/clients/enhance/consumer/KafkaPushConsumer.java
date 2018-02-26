@@ -205,7 +205,6 @@ public class KafkaPushConsumer<K> implements ConsumeOperator<K> {
                         clientContext.keyDeserializer());
                 innerSender = new KafkaProducer<>(clientContext.getInternalProducerProps(),
                         clientContext.keySerializer(), new ExtMessageEncoder<K>());
-
                 if (!clientContext.consumeHooks().isEmpty()) {
                     logger.info("KafkaPushConsumer add consume-message-hooks.");
                     safeConsumer.addConsumeMessageHooks(clientContext.consumeHooks());

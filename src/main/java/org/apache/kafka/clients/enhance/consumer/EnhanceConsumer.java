@@ -28,6 +28,7 @@ import org.apache.kafka.clients.enhance.exception.KafkaAdminException;
 import org.apache.kafka.common.Node;
 import org.apache.kafka.common.PartitionInfo;
 import org.apache.kafka.common.TopicPartition;
+import org.apache.kafka.common.metrics.Metrics;
 import org.apache.kafka.common.requests.IsolationLevel;
 import org.apache.kafka.common.serialization.Deserializer;
 import org.slf4j.Logger;
@@ -607,4 +608,7 @@ class EnhanceConsumer<K> extends KafkaConsumer<K, ExtMessage<K>> implements Admi
         }
     }
 
+    Metrics kafkaMetrics() {
+        return getMetrics();
+    }
 }

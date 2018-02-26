@@ -11,8 +11,8 @@ public class ConcurrentConsumeContext extends AbstractConsumeContext {
 
     private final BitSet batchConsumeFlags;
 
-    public ConcurrentConsumeContext(TopicPartition tp, long ackOffset, int batchSize) {
-        super(tp, ackOffset);
+    public ConcurrentConsumeContext(TopicPartition tp, long beginOffset, int batchSize) {
+        super(tp, beginOffset);
         this.batchConsumeFlags = new BitSet(batchSize);
     }
 

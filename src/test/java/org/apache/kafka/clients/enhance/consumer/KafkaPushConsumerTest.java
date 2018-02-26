@@ -34,7 +34,7 @@ public class KafkaPushConsumerTest {
         props.put("client.id", "my_4");
         props.put("enable.auto.commit", "true");
         props.put("auto.commit.interval.ms", "1000");
-        props.put("isolation.level", "read_uncommitted");
+        props.put("isolation.level", "read_committed");
 
         consumer = new KafkaPushConsumer<>(props, String.class);
         consumer.consumeSetting()
@@ -89,8 +89,8 @@ public class KafkaPushConsumerTest {
                         }
                     }
                     //consumeContext.updateConsumeStatusInBatch(i++, true);
-                    if (rec.getMsgKey().equals("5"))
-                        TimeUnit.MILLISECONDS.sleep(150000L);
+                    /*if (rec.getMsgKey().equals("5"))
+                        TimeUnit.MILLISECONDS.sleep(150000L);*/
 
                 }
 
@@ -155,7 +155,7 @@ public class KafkaPushConsumerTest {
     public void start() throws Exception {
 
 
-        TimeUnit.SECONDS.sleep(1000);
+        TimeUnit.SECONDS.sleep(1000000);
     }
 
 }

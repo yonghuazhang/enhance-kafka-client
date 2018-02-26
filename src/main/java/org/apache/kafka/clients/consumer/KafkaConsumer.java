@@ -1820,4 +1820,8 @@ public class KafkaConsumer<K, V> implements Consumer<K, V> {
             throw new IllegalStateException("Must configure at least one partition assigner class name to " +
                     ConsumerConfig.PARTITION_ASSIGNMENT_STRATEGY_CONFIG + " configuration property");
     }
+
+    protected Metrics getMetrics() {
+        return this.metrics;
+    }
 }

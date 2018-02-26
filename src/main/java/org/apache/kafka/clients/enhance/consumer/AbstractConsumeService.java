@@ -4,6 +4,8 @@ import org.apache.kafka.clients.consumer.ConsumerRebalanceListener;
 import org.apache.kafka.clients.consumer.OffsetAndTimestamp;
 import org.apache.kafka.clients.enhance.ClientThreadFactory;
 import org.apache.kafka.clients.enhance.ExtMessage;
+import org.apache.kafka.clients.enhance.ExtMessageDef;
+import org.apache.kafka.clients.enhance.ExtMessageUtils;
 import org.apache.kafka.clients.enhance.ShutdownableThread;
 import org.apache.kafka.clients.enhance.Utility;
 import org.apache.kafka.clients.enhance.exception.KafkaConsumeException;
@@ -27,6 +29,9 @@ import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.ThreadPoolExecutor;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.locks.ReentrantLock;
+
+import static org.apache.kafka.clients.enhance.ExtMessageDef.MAX_DELAY_TIME_LEVEL;
+import static org.apache.kafka.clients.enhance.ExtMessageDef.PROPERTY_DELAY_RESEND_TOPIC;
 
 public abstract class AbstractConsumeService<K> implements ConsumeService<K> {
     protected static final Logger logger = LoggerFactory.getLogger(AbstractConsumeService.class);
@@ -102,7 +107,6 @@ public abstract class AbstractConsumeService<K> implements ConsumeService<K> {
         } finally {
             syncLock.unlock();
         }
-
 
     }
 
@@ -183,9 +187,19 @@ public abstract class AbstractConsumeService<K> implements ConsumeService<K> {
 
     @Override
     public boolean sendMessageBack(String topic, ExtMessage<K> msg, int delayLevel) {
+        if (null == topic || null == msg) return false;
         ProducerRecord<K, ExtMessage<K>> record = null;
-        try {
+        if (1 <= delayLevel && MAX_DELAY_TIME_LEVEL >= delayLevel) {
+            String delayedTopic = getDelayedTopicName(delayLevel);
+            msg.addProperty(PROPERTY_DELAY_RESEND_TOPIC, topic);
+            ExtMessageUtils.setDelayedLevel(msg, delayLevel);
+            record = new ProducerRecord<>(delayedTopic, msg.getMsgKey(), msg);
+            record.headers().add(PROPERTY_DELAY_RESEND_TOPIC, topic.getBytes(ExtMessageDef.STRING_ENCODE));
+        } else {
             record = new ProducerRecord<>(topic, msg.getMsgKey(), msg);
+        }
+
+        try {
             Future<RecordMetadata> result = innerSender.send(record);
             result.get(SEND_MESSAGE_BACK_WAIT_TIMEOUT_MS, TimeUnit.MILLISECONDS);
             logger.trace("sendMessageBack message[{}] successfully.", record.toString());
@@ -194,6 +208,11 @@ public abstract class AbstractConsumeService<K> implements ConsumeService<K> {
             logger.warn("sendMessageBack failed. records = [{}]", record);
         }
         return false;
+
+    }
+
+    private String getDelayedTopicName(int delayLevel) {
+        return DelayedMessageTopic.getDelayedTopicNameByLevel(delayLevel, null, null);
     }
 
     private Set<TopicPartition> filterAssignedRetryTopic(Set<TopicPartition> origAssigned) {

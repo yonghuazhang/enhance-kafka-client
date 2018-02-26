@@ -2,7 +2,6 @@ package org.apache.kafka.clients.enhance.producer;
 
 import org.apache.kafka.clients.consumer.OffsetAndMetadata;
 import org.apache.kafka.clients.enhance.ExtMessage;
-import org.apache.kafka.clients.enhance.consumer.ConsumeClientContext;
 import org.apache.kafka.clients.producer.Callback;
 import org.apache.kafka.clients.producer.ProducerRecord;
 import org.apache.kafka.clients.producer.RecordMetadata;
@@ -184,11 +183,11 @@ public class KafkaEnhanceProducer<K> implements ProduceOperator<K> {
 
     @Override
     public void suspend() {
-        //since transaction message, don't implement it.
+        //since hard to process transaction message, don't implement it.
     }
 
     @Override
     public void resume() {
-        //since transaction message, don't implement it.
+        //since hard to process transaction message, don't implement it.
     }
 }

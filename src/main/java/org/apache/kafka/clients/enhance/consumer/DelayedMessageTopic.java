@@ -36,7 +36,7 @@ public enum DelayedMessageTopic {
         return unit.toMillis(duration);
     }
 
-    public String getDelayedTopicName(String prefix, String suffix) {
+    private String getDelayedTopicName(String prefix, String suffix) {
         StringBuffer builder = new StringBuffer();
 
         if (null != prefix && !prefix.isEmpty()) {
@@ -73,5 +73,9 @@ public enum DelayedMessageTopic {
             idx = allDelayedTopics.length - 1;
         }
         return allDelayedTopics[idx];
+    }
+
+    public static int maxDelayedTopicNum() {
+        return DelayedMessageTopic.values().length;
     }
 }
