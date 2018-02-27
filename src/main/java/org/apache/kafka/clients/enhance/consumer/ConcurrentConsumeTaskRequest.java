@@ -43,7 +43,7 @@ public class ConcurrentConsumeTaskRequest<K> extends AbstractConsumeTaskRequest<
         return requestId;
     }
 
-    private ConcurrentConsumeService<K> getConsumeService() {
+    private ConcurrentConsumeService<K> concurrentConsumeService() {
         return (ConcurrentConsumeService<K>) this.consumeService;
     }
 
@@ -64,19 +64,19 @@ public class ConcurrentConsumeTaskRequest<K> extends AbstractConsumeTaskRequest<
                         }
 
                         if (msg.getRetryCount() < MAX_RECONSUME_COUNT) {
-                            updateMessageAttrBeforeRetrySendback(msg, delayLevel);
+                            updateMessageAttrBeforeSendback(msg, delayLevel);
 
-                            boolean shouldLocalRetry = false;
+                            boolean sendbackOk = false;
                             switch (clientContext.consumeModel()) {
                                 case GROUP_CLUSTERING:
-                                    shouldLocalRetry = consumeService.sendMessageBack(retryTopic, msg, msg.getDelayedLevel());
+                                    sendbackOk = consumeService.sendMessageBack(retryTopic, msg, msg.getDelayedLevel());
                                     break;
                                 case GROUP_BROADCASTING:
                                 default:
                                     break;
                             }
 
-                            if (!shouldLocalRetry) {
+                            if (!sendbackOk) {
                                 localRetryRecords.add(msg);
                             }
                         } else {
@@ -125,7 +125,7 @@ public class ConcurrentConsumeTaskRequest<K> extends AbstractConsumeTaskRequest<
                 manager.commitOffsets(topicPartition, offsets);
                 break;
         }
-        getConsumeService().removeCompletedTask(requestId);
+        concurrentConsumeService().removeCompletedTask(requestId);
     }
 
     @Override
@@ -133,10 +133,14 @@ public class ConcurrentConsumeTaskRequest<K> extends AbstractConsumeTaskRequest<
         ConsumeStatus status = ConsumeStatus.CONSUME_RETRY_LATER;
         try {
             if (topicPartition.topic().equals(retryTopic)) {
-                List<ExtMessage<K>> newMessages = fetchMessagesFromRetryPartition(this.messages);
+                List<ExtMessage<K>> newMessages = retrieveMessagesFromRetryTopic(this.messages);
                 status = handler.consumeMessage(newMessages, this.handlerContext);
             } else {
                 status = handler.consumeMessage(this.messages, this.handlerContext);
+            }
+            if (null == status) {
+                logger.warn("consuming handler return null status, status will be replaced by [CONSUME_SUCCESS].");
+                status = ConsumeStatus.CONSUME_SUCCESS;
             }
         } catch (Throwable t) {
             if (t instanceof InterruptedException) {
@@ -152,7 +156,7 @@ public class ConcurrentConsumeTaskRequest<K> extends AbstractConsumeTaskRequest<
         return ConsumeTaskResponse.TASK_EXEC_SUCCESS;
     }
 
-    private void updateMessageAttrBeforeRetrySendback(ExtMessage<K> msg, int delayedLevel) {
+    private void updateMessageAttrBeforeSendback(ExtMessage<K> msg, int delayedLevel) {
         if (msg.getRetryCount() == 0) {
             msg.addProperty(PROPERTY_REAL_TOPIC, msg.getTopic());
             msg.addProperty(PROPERTY_REAL_PARTITION_ID, String.valueOf(msg.getPartion()));
@@ -164,7 +168,7 @@ public class ConcurrentConsumeTaskRequest<K> extends AbstractConsumeTaskRequest<
         ExtMessageUtils.setDelayedLevel(msg, delayedLevel);
     }
 
-    private List<ExtMessage<K>> fetchMessagesFromRetryPartition(List<ExtMessage<K>> messagesFromRetryPartition) {
+    private List<ExtMessage<K>> retrieveMessagesFromRetryTopic(List<ExtMessage<K>> messagesFromRetryPartition) {
         List<ExtMessage<K>> newMessages = new ArrayList<>(messagesFromRetryPartition.size());
         for (ExtMessage<K> message : messagesFromRetryPartition) {
             ExtMessage<K> newMessage = ExtMessage.parseFromRetryMessage(message);

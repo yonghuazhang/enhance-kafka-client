@@ -1,6 +1,7 @@
 package org.apache.kafka.clients.enhance.consumer;
 
 import org.apache.kafka.clients.consumer.ConsumerConfig;
+import org.apache.kafka.clients.consumer.RangeAssignor;
 import org.apache.kafka.clients.enhance.AbstractExtMessageFilter;
 import org.apache.kafka.clients.enhance.Utility;
 import org.apache.kafka.clients.enhance.consumer.listener.ConcurrentMessageHandler;
@@ -263,8 +264,17 @@ public final class ConsumeClientContext<K> {
 
     public ConsumeClientContext consumeModel(ConsumeGroupModel model) {
         this.consumeGroupModel = model;
-        updateConfigByProp(innerConsumeConfig, ConsumerConfig.PARTITION_ASSIGNMENT_STRATEGY_CONFIG,
-                BroadcastAssignor.class.getName());
+        switch (consumeGroupModel) {
+            case GROUP_BROADCASTING:
+                updateConfigByProp(innerConsumeConfig, ConsumerConfig.PARTITION_ASSIGNMENT_STRATEGY_CONFIG,
+                        BroadcastAssignor.class.getName());
+                break;
+            case GROUP_CLUSTERING:
+            case GROUP_NULL_MODEL:
+                updateConfigByProp(innerConsumeConfig, ConsumerConfig.PARTITION_ASSIGNMENT_STRATEGY_CONFIG,
+                        RangeAssignor.class.getName());
+                break;
+        }
         return this;
     }
 

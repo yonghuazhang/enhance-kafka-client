@@ -26,6 +26,7 @@ public class PartitionDataManager<K, V> {
     private final ConcurrentHashMap<TopicPartition, PartitionData<K, V>> patitionDatas = new ConcurrentHashMap<>();
     private final ConcurrentHashMap<TopicPartition, List<ConsumerRecord<K, V>>> saveFailedRecords = new ConcurrentHashMap<>();
 
+    //before kafkaclient rebalanced, the function will be called.
     public void updateOnPartitionsRevoked(final Collection<TopicPartition> partitions) {
         logger.info("[PartitionDataManager] called by client rebalance onPartitionsRevoked ...");
         saveFailedRecords.clear();
@@ -42,6 +43,7 @@ public class PartitionDataManager<K, V> {
         }
     }
 
+    //after kafkaclient rebalanced, the function will be called.
     public boolean updateOnPartitionsAssigned(final Collection<TopicPartition> partitions) {
         logger.info("[PartitionDataManager] called by client rebalance OnPartitionsAssigned ...");
         saveFailedRecords.clear();

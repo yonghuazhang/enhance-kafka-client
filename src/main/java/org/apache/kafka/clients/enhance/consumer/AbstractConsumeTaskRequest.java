@@ -59,4 +59,13 @@ public abstract class AbstractConsumeTaskRequest<K> implements Callable<ConsumeT
     public void setTaskResponseFuture(Future<ConsumeTaskResponse> taskResponseFuture) {
         this.taskResponseFuture = taskResponseFuture;
     }
+
+    @Override
+    public String toString() {
+        return "AbstractConsumeTaskRequest{" +
+                "messages=" + messages +
+                ", topicPartition=" + topicPartition +
+                ", taskCreatedTime=" + taskCreatedTime +
+                '}';
+    }
 }

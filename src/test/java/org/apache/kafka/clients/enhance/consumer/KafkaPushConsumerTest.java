@@ -7,6 +7,8 @@ import org.apache.kafka.clients.enhance.consumer.listener.ConcurrentConsumeConte
 import org.apache.kafka.clients.enhance.consumer.listener.ConcurrentMessageHandler;
 import org.apache.kafka.clients.enhance.consumer.listener.ConsumeMessageHook;
 import org.apache.kafka.clients.enhance.consumer.listener.ConsumeStatus;
+import org.apache.kafka.clients.enhance.consumer.listener.OrdinalConsumeContext;
+import org.apache.kafka.clients.enhance.consumer.listener.OrdinalMessageHandler;
 import org.apache.kafka.common.TopicPartition;
 import org.junit.Before;
 import org.junit.Test;
@@ -30,8 +32,8 @@ public class KafkaPushConsumerTest {
         props.put("retries", 1);
         props.put("batch.size", 16384);
         props.put("linger.ms", 1);
-        props.put("group.id", "test_zzz_2");
-        props.put("client.id", "my_4");
+        props.put("group.id", "zyh_zzz_1");
+        props.put("client.id", "zyh_my_1");
         props.put("enable.auto.commit", "true");
         props.put("auto.commit.interval.ms", "1000");
         props.put("isolation.level", "read_committed");
@@ -45,7 +47,7 @@ public class KafkaPushConsumerTest {
         final AtomicInteger total = new AtomicInteger(0);
         final Map<String, Integer> calc = new HashMap<>();
         final Object lock = new Object();
-        consumer.addConsumeHook(new ConsumeMessageHook<String>() {
+        /*consumer.addConsumeHook(new ConsumeMessageHook<String>() {
             @Override
             public ConsumerRecords<String, ExtMessage<String>> onConsume(ConsumerRecords<String, ExtMessage<String>> records) {
                 System.out.println("hook1 onConsume ===========>" + records.count());
@@ -66,20 +68,30 @@ public class KafkaPushConsumerTest {
             public void configure(Map<String, ?> configs) {
 
             }
+        });*/
+
+        consumer.registerHandler(new OrdinalMessageHandler<String>() {
+            @Override
+            public ConsumeStatus consumeMessage(List<ExtMessage<String>> message, OrdinalConsumeContext consumeContext) throws InterruptedException {
+                System.out.println("message count=" + message.size() + " message retry time:" + (new Date()));
+                consumeContext.suspendTimeInMs(1000);
+                return ConsumeStatus.CONSUME_RETRY_LATER;
+            }
         });
 
-        consumer.registerHandler(new ConcurrentMessageHandler<String>() {
+        /*consumer.registerHandler(new ConcurrentMessageHandler<String>() {
             @Override
             public ConsumeStatus consumeMessage(List<ExtMessage<String>> message, ConcurrentConsumeContext consumeContext) throws InterruptedException {
 
-                /*System.out.println("message num=" + message.size() + "\t --->" + message.get(0).getRetryCount());
-                consumeContext.updateConsumeStatusInBatch(0, true);*/
+                *//*System.out.println("message num=" + message.size() + "\t --->" + message.get(0).getRetryCount());
+                consumeContext.updateConsumeStatusInBatch(0, true);*//*
 
                 int i = 0;
                 total.addAndGet(message.size());
-                System.out.println("message count=" + message.size());
+                System.out.println("message count=" + message.size() + " message retry time:" + (new Date()));
                 for (ExtMessage<String> rec : message) {
-                    System.out.println("message key=" + rec.getMsgKey() + " message time=" + new Date(rec.getStoreTimeMs()));
+                    System.out.println("message key=" + rec.getMsgKey() + " message time=" + new Date(rec.getStoreTimeMs())
+                    + " message retrytime=" + rec.getRetryCount());
                     String key = rec.getMsgKey();
                     synchronized (lock) {
                         if (calc.containsKey(key)) {
@@ -89,23 +101,23 @@ public class KafkaPushConsumerTest {
                         }
                     }
                     //consumeContext.updateConsumeStatusInBatch(i++, true);
-                    /*if (rec.getMsgKey().equals("5"))
-                        TimeUnit.MILLISECONDS.sleep(150000L);*/
+                    *//*if (rec.getMsgKey().equals("5"))
+                        TimeUnit.MILLISECONDS.sleep(150000L);*//*
 
                 }
 
                 return ConsumeStatus.CONSUME_RETRY_LATER;
             }
         });
-
-        consumer.subscribe("test");
+*/
+        consumer.subscribe("test2");
         consumer.start();
         boolean seekOk = false;
         TimeUnit.SECONDS.sleep(5);
         //consumer.suspend();
         while (true) {
             //System.out.println("total====>\t" + total.get());
-            if (!seekOk) {
+         /*   if (!seekOk) {
                 consumer.addConsumeHook(new ConsumeMessageHook<String>() {
                     @Override
                     public ConsumerRecords<String, ExtMessage<String>> onConsume(ConsumerRecords<String, ExtMessage<String>> records) {
@@ -129,7 +141,7 @@ public class KafkaPushConsumerTest {
                     }
                 });
                 seekOk = true;
-            }
+            }*/
             //TimeUnit.SECONDS.sleep(120);
             //consumer.resume();
             for (int i = 0; i < 10; i++) {
