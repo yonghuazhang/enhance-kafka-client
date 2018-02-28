@@ -75,9 +75,9 @@ public class KafkaEnhanceProducerTest {
         //props.put("interceptor.classes","org.apache.kafka.clients.enhance.producer.TestPi");
 
         producer = new KafkaEnhanceProducer<>(props, String.class);
-        producer.producerSetting().setTransactionId("test-1-1");
-        producer.producerSetting().setIdempotence(true);
-        producer.addSendMessageHook(new SendMessageHook<String>() {
+        //producer.producerSetting().setTransactionId("test-1-1");
+        ///producer.producerSetting().setIdempotence(true);
+        /*producer.addSendMessageHook(new SendMessageHook<String>() {
             @Override
             public ExtMessage<String> beforeSend(ExtMessage<String> message) {
                 System.out.println("before -------->");
@@ -89,21 +89,28 @@ public class KafkaEnhanceProducerTest {
                 System.out.println("after -------->" + metadata);
 
             }
-        });
+        });*/
         producer.start();
 
         ExtMessage<String> message = new ExtMessage<>();
-        message.setTopic("test");
+        message.setTopic("test2");
         message.setMsgKey("1");
         message.setMsgValue("helloworld".getBytes());
 
-        producer.beginTransaction();
+
+
+        for (int i = 0; i < 100; i++) {
+            message.setTags(Integer.toString(i));
+            producer.sendMessage(message);
+        }
+
+        /*producer.beginTransaction();
         Future<RecordMetadata> response = producer.sendMessage(message);
         RecordMetadata meta = response.get();
-        /*response = producer.sendMessage(message);
-        response.get();*/
+        *//*response = producer.sendMessage(message);
+        response.get();*//*
         producer.commitTransaction();
-        System.out.println("---->" + meta);
+        System.out.println("---->" + meta);*/
         producer.shutdownNow();
 
     }

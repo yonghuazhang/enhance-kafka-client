@@ -6,25 +6,25 @@ import java.util.Collection;
 
 public class ClusterDescription {
 
-    private final Collection<Node> nodes;
-    private final Node controller;
-    private final String clusterId;
+	private final Collection<Node> nodes;
+	private final Node controller;
+	private final String clusterId;
 
-    public ClusterDescription(Collection<Node> nodes, Node controller, String clusterId) {
-        this.nodes = nodes;
-        this.controller = controller;
-        this.clusterId = clusterId;
-    }
+	public ClusterDescription(Collection<Node> nodes, Node controller, String clusterId) {
+		this.nodes = nodes;
+		this.controller = controller;
+		this.clusterId = clusterId;
+	}
 
-    public Collection<Node> getNodes() {
-        return nodes;
-    }
+	public Collection<Node> getNodes() {
+		return nodes;
+	}
 
-    public Node getController() {
-        return controller;
-    }
+	public Node getController() {
+		return controller;
+	}
 
-    public String getClusterId() {
-        return clusterId;
-    }
+	public String getClusterId() {
+		return clusterId;
+	}
 }

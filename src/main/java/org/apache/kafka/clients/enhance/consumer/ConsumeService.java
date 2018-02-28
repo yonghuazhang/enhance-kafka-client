@@ -8,42 +8,42 @@ import java.util.Collection;
 import java.util.concurrent.TimeUnit;
 
 public interface ConsumeService<K> {
-    long DEFAULT_CLOSE_TIMEOUT_MS = 30 * 1000;
+	long DEFAULT_CLOSE_TIMEOUT_MS = 30 * 1000;
 
-    void start();
+	void start();
 
-    void shutdown();
+	void shutdown();
 
-    void shutdownNow();
+	void shutdownNow();
 
-    void shutdown(long timeout, TimeUnit unit);
+	void shutdown(long timeout, TimeUnit unit);
 
-    void updateCoreThreadNum(int coreThreadNum);
+	void updateCoreThreadNum(int coreThreadNum);
 
-    int getThreadCores();
+	int getThreadCores();
 
-    int getQueueSize();
+	int getQueueSize();
 
-    void submitConsumeRequest(final AbstractConsumeTaskRequest<K> requestTask);
+	void submitConsumeRequest(final AbstractConsumeTaskRequest<K> requestTask);
 
-    boolean sendMessageBack(final String topic, final ExtMessage<K> msg, final int delayLevel);
+	boolean sendMessageBack(final String topic, final ExtMessage<K> msg, final int delayLevel);
 
-    void seek(TopicPartition partition, long offset);
+	void seek(TopicPartition partition, long offset);
 
-    void seekToTime(long timestamp);
+	void seekToTime(long timestamp);
 
-    void seekToBeginning();
+	void seekToBeginning();
 
-    void seekToEnd();
+	void seekToEnd();
 
-    ConsumerRebalanceListener getRebalanceListener();
+	ConsumerRebalanceListener getRebalanceListener();
 
-    void subscribe(Collection<String> topics);
+	void subscribe(Collection<String> topics);
 
-    void unsubscribe();
+	void unsubscribe();
 
-    void suspend();
+	void suspend();
 
-    void resume();
+	void resume();
 
 }

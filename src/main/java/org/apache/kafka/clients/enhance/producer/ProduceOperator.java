@@ -14,22 +14,22 @@ import java.util.concurrent.Future;
 
 public interface ProduceOperator<K> extends ClientOperator {
 
-    void flush();
+	void flush();
 
-    List<PartitionInfo> partitionsForTopic(String topic);
+	List<PartitionInfo> partitionsForTopic(String topic);
 
-    void beginTransaction();
+	void beginTransaction();
 
-    void commitTransaction();
+	void commitTransaction();
 
-    void abortTransaction();
+	void abortTransaction();
 
-    void sendGroupOffsetsToTransaction(Map<TopicPartition, OffsetAndMetadata> offsets, String groupId);
+	void sendGroupOffsetsToTransaction(Map<TopicPartition, OffsetAndMetadata> offsets, String groupId);
 
-    Future<RecordMetadata> sendMessage(ExtMessage<K> message);
+	Future<RecordMetadata> sendMessage(ExtMessage<K> message);
 
-    Future<RecordMetadata> sendMessage(ExtMessage<K> message, Callback callback);
+	Future<RecordMetadata> sendMessage(ExtMessage<K> message, Callback callback);
 
-    void addSendMessageHook(SendMessageHook<K> sendHook);
+	void addSendMessageHook(SendMessageHook<K> sendHook);
 
 }

@@ -5,7 +5,7 @@ import org.apache.kafka.clients.producer.RecordMetadata;
 
 public interface SendMessageHook<K> {
 
-    ExtMessage<K> beforeSend(ExtMessage<K> message);
+	ExtMessage<K> beforeSend(ExtMessage<K> message);
 
-    void afterSend(RecordMetadata metadata, Exception exception);
+	void afterSend(RecordMetadata metadata, Exception exception);
 }

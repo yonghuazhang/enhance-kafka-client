@@ -4,16 +4,16 @@ import java.util.concurrent.TimeUnit;
 
 public interface ClientOperator {
 
-    String clientId();
+	String clientId();
 
-    void start();
+	void start();
 
-    void shutdownNow();
+	void shutdownNow();
 
-    void shutdown(long timeout, TimeUnit unit);
+	void shutdown(long timeout, TimeUnit unit);
 
-    void suspend();
+	void suspend();
 
-    void resume();
+	void resume();
 
 }

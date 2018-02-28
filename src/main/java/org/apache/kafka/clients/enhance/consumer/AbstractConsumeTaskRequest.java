@@ -15,57 +15,53 @@ import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
 
 public abstract class AbstractConsumeTaskRequest<K> implements Callable<ConsumeTaskResponse>, Delayed {
-    protected static final Logger logger = LoggerFactory.getLogger(AbstractConsumeTaskRequest.class);
-    protected static final int FIRST_MESSAGE_IDX = 0;
+	protected static final Logger logger = LoggerFactory.getLogger(AbstractConsumeTaskRequest.class);
+	protected static final int FIRST_MESSAGE_IDX = 0;
 
-    protected final ConsumeClientContext<K> clientContext;
-    protected final PartitionDataManager manager;
-    protected final List<ExtMessage<K>> messages;
-    protected final TopicPartition topicPartition;
-    protected final AbstractConsumeService<K> consumeService;
-    protected final long taskCreatedTime = Time.SYSTEM.milliseconds();
-    protected volatile Future<ConsumeTaskResponse> taskResponseFuture;
+	protected final ConsumeClientContext<K> clientContext;
+	protected final PartitionDataManager manager;
+	protected final List<ExtMessage<K>> messages;
+	protected final TopicPartition topicPartition;
+	protected final AbstractConsumeService<K> consumeService;
+	protected final long taskCreatedTime = Time.SYSTEM.milliseconds();
+	protected volatile Future<ConsumeTaskResponse> taskResponseFuture;
 
-    public AbstractConsumeTaskRequest(AbstractConsumeService<K> service, PartitionDataManager manager,
-                                      List<ExtMessage<K>> messages, TopicPartition topicPartition,
-                                      ConsumeClientContext<K> clientContext) {
-        this.consumeService = service;
-        this.clientContext = clientContext;
-        this.topicPartition = topicPartition;
-        this.manager = manager;
-        this.messages = Collections.unmodifiableList(messages);
-    }
+	public AbstractConsumeTaskRequest(AbstractConsumeService<K> service, PartitionDataManager manager,
+			List<ExtMessage<K>> messages, TopicPartition topicPartition, ConsumeClientContext<K> clientContext) {
+		this.consumeService = service;
+		this.clientContext = clientContext;
+		this.topicPartition = topicPartition;
+		this.manager = manager;
+		this.messages = Collections.unmodifiableList(messages);
+	}
 
-    public abstract void processConsumeStatus(ConsumeStatus status);
+	public abstract void processConsumeStatus(ConsumeStatus status);
 
-    public long getTaskCreatedTime() {
-        return taskCreatedTime;
-    }
+	public long getTaskCreatedTime() {
+		return taskCreatedTime;
+	}
 
-    @Override
-    public long getDelay(TimeUnit unit) {
-        return Time.SYSTEM.milliseconds() - taskCreatedTime;
-    }
+	@Override
+	public long getDelay(TimeUnit unit) {
+		return Time.SYSTEM.milliseconds() - taskCreatedTime;
+	}
 
-    @Override
-    public int compareTo(Delayed otherRequest) {
-        return Long.compare(this.taskCreatedTime, ((AbstractConsumeTaskRequest) otherRequest).getTaskCreatedTime());
-    }
+	@Override
+	public int compareTo(Delayed otherRequest) {
+		return Long.compare(this.taskCreatedTime, ((AbstractConsumeTaskRequest) otherRequest).getTaskCreatedTime());
+	}
 
-    public Future<ConsumeTaskResponse> getTaskResponseFuture() {
-        return taskResponseFuture;
-    }
+	public Future<ConsumeTaskResponse> getTaskResponseFuture() {
+		return taskResponseFuture;
+	}
 
-    public void setTaskResponseFuture(Future<ConsumeTaskResponse> taskResponseFuture) {
-        this.taskResponseFuture = taskResponseFuture;
-    }
+	public void setTaskResponseFuture(Future<ConsumeTaskResponse> taskResponseFuture) {
+		this.taskResponseFuture = taskResponseFuture;
+	}
 
-    @Override
-    public String toString() {
-        return "AbstractConsumeTaskRequest{" +
-                "messages=" + messages +
-                ", topicPartition=" + topicPartition +
-                ", taskCreatedTime=" + taskCreatedTime +
-                '}';
-    }
+	@Override
+	public String toString() {
+		return "AbstractConsumeTaskRequest{" + "messages=" + messages + ", topicPartition=" + topicPartition
+				+ ", taskCreatedTime=" + taskCreatedTime + '}';
+	}
 }
