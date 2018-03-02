@@ -49,6 +49,7 @@ public class ConcurrentConsumeService<K> extends AbstractConsumeService<K> {
 			while (isRunning) {
 				Set<TopicPartition> topicPartitions = partitionDataManager.getAssignedPartition();
 				if (null != topicPartitions && !topicPartitions.isEmpty()) {
+					int emptyParitionNum = 0;
 					for (TopicPartition topicPartition : topicPartitions) {
 						List<ConsumerRecord<K, ExtMessage<K>>> records = partitionDataManager
 								.retrieveTaskRecords(topicPartition, clientContext.consumeBatchSize());
@@ -65,7 +66,13 @@ public class ConcurrentConsumeService<K> extends AbstractConsumeService<K> {
 											+ messages);
 							submitConsumeRequest(requestTask);
 							requestMap.put(requestTask.getRequestId(), requestTask);
+						} else {
+							emptyParitionNum++;
 						}
+					}
+					//all partitions are empty, sleep for a while.
+					if (emptyParitionNum == topicPartitions.size()) {
+						Utility.sleep(clientContext.pollMessageAwaitTimeoutMs());
 					}
 				} else { // not assigned any partition, standby service
 					Utility.sleep(clientContext.pollMessageAwaitTimeoutMs());
@@ -87,10 +94,19 @@ public class ConcurrentConsumeService<K> extends AbstractConsumeService<K> {
 			while (requestItor.hasNext()) {
 				ConcurrentConsumeTaskRequest<K> taskRequest = requestItor.next();
 				Future<ConsumeTaskResponse> responseFuture = taskRequest.getTaskResponseFuture();
-				if (responseFuture.isDone()) {
-					requestMap.remove(taskRequest.getRequestId());
-				} else {
-					if (taskRequest.getDelay(TimeUnit.MILLISECONDS) > clientContext.maxMessageDealTimeMs()) {
+				if (responseFuture != null) {
+
+					try {
+						if (responseFuture.isDone() && responseFuture.get() == ConsumeTaskResponse.TASK_EXEC_SUCCESS) {
+							requestMap.remove(taskRequest.getRequestId());
+						}
+					} catch (Exception e) {
+						logger.warn("processExpiredTaskRequest read future status error. due to:", e);
+					}
+
+
+					if (!responseFuture.isDone() && !responseFuture.isCancelled()
+							&& taskRequest.getDelay(TimeUnit.MILLISECONDS) > clientContext.maxMessageDealTimeMs()) {
 						responseFuture.cancel(true);
 					}
 				}

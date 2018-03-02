@@ -24,10 +24,10 @@ public final class ConsumeClientContext<K> {
 	private static final String INNER_PRODUCER_NAME_SUFFIX = "_inner_producer";
 
 	public static final int DEFAULT_CONSUME_BATCH_SIZE = 1;
-	public static final long TIME_WAIT_FOR_POLL_REC_MS = 200L;
+	public static final long TIME_WAIT_FOR_POLL_REC_MS = 500L;
 	public static final long DEFAULT_OFFSET_STORE_INTERVALS = 5000L;
 	public static final long CLIENT_RETRY_BACKOFF_MS = 3000L;
-	public static final long DEFAULT_MAX_MESSAGE_DEAL_TIME_MS = 5 * 60 * 1000L;
+	public static final long DEFAULT_MAX_MESSAGE_DEAL_TIME_MS = 60 * 60 * 1000L;
 
 	private final Map<String, Object> innerConsumeConfig = new HashMap<>();
 	private final Map<String, Object> innerProducerConfig = new HashMap<>();

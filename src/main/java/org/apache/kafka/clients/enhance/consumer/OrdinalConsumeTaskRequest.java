@@ -37,6 +37,7 @@ public class OrdinalConsumeTaskRequest<K> extends AbstractConsumeTaskRequest<K> 
 		switch (status) {
 			case CONSUME_RETRY_LATER:
 				if (!isShutdownTask) {
+					logger.debug("=========> processing ConsumeStatus...");
 					//retry consuming the messages after suspend time. modified the suspending time.
 					if (handlerContext.suspendTimeInMs() < DelayedMessageTopic.SYS_DELAYED_TOPIC_5S.getDurationMs()) {
 						handlerContext.suspendTimeInMs(DelayedMessageTopic.SYS_DELAYED_TOPIC_5S.getDurationMs());
@@ -84,6 +85,7 @@ public class OrdinalConsumeTaskRequest<K> extends AbstractConsumeTaskRequest<K> 
 				logger.warn("consuming handler return null status, status will be replaced by [CONSUME_RETRY_LATER].");
 				status = ConsumeStatus.CONSUME_RETRY_LATER;
 			}
+			return ConsumeTaskResponse.TASK_EXEC_SUCCESS;
 		} catch (Throwable t) {
 			if (t instanceof InterruptedException) {
 				logger.info("[ConcurrentConsumeTaskRequest] callback exec too long(>{}ms), interrupted the task.",
@@ -93,8 +95,13 @@ public class OrdinalConsumeTaskRequest<K> extends AbstractConsumeTaskRequest<K> 
 			}
 			return ConsumeTaskResponse.TASK_EXEC_FAILURE;
 		} finally {
-			processConsumeStatus(status);
+			try {
+				processConsumeStatus(status);
+			} catch (Exception e) {
+				logger.warn("[OrdinalConsumeTaskRequest] processConsumeStatus exception, due to:", e);
+				this.updateTimestamp();
+				processConsumeStatus(status);
+			}
 		}
-		return ConsumeTaskResponse.TASK_EXEC_SUCCESS;
 	}
 }

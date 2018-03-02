@@ -66,6 +66,17 @@ public class PartitionDataManager<K, V> {
 		return true;
 	}
 
+	public Set<TopicPartition> getEmptyPartitionData() {
+		Set<TopicPartition> emptyDataPartition = new HashSet<>();
+		for (TopicPartition tp : patitionDatas.keySet()) {
+			if (patitionDatas.get(tp).getWinSize() == 0 && patitionDatas.get(tp).highWaterMarkOffset() != INVALID_OFFSET_VALUE
+					&& !saveFailedRecords.containsKey(tp)) {
+				emptyDataPartition.add(tp);
+			}
+		}
+		return emptyDataPartition;
+	}
+
 	public Set<TopicPartition> getAssignedPartition() {
 		return patitionDatas.keySet();
 	}
@@ -85,7 +96,7 @@ public class PartitionDataManager<K, V> {
 		return commitOffsets;
 	}
 
-	public Set<TopicPartition> saveConsumerRecords(ConsumerRecords<K, V> records) throws InterruptedException {
+	public Set<TopicPartition> saveConsumerRecords(ConsumerRecords<K, V> records, Map<TopicPartition, Long> highWaterMarks) throws InterruptedException {
 		//save current messages from latest polled message.
 		if (null != records && !records.isEmpty()) {
 			for (TopicPartition tp : records.partitions()) {
@@ -94,7 +105,7 @@ public class PartitionDataManager<K, V> {
 				}
 				PartitionData<K, V> partitionData = patitionDatas.get(tp);
 				List<ConsumerRecord<K, V>> recordsByPartition = records.records(tp);
-				savePartitionData(tp, partitionData, recordsByPartition);
+				savePartitionData(tp, partitionData, recordsByPartition, highWaterMarks.containsKey(tp) ? highWaterMarks.get(tp) : INVALID_OFFSET_VALUE);
 			}
 		}
 		//save last rest records.
@@ -113,16 +124,16 @@ public class PartitionDataManager<K, V> {
 				patitionDatas.putIfAbsent(tp, new PartitionData<K, V>(tp));
 			}
 			PartitionData<K, V> partitionData = patitionDatas.get(tp);
-			savePartitionData(tp, partitionData, lastRestRecords);
+			savePartitionData(tp, partitionData, lastRestRecords, INVALID_OFFSET_VALUE);
 		}
 	}
 
 	private boolean savePartitionData(final TopicPartition tp, final PartitionData<K, V> partitionData,
-			final List<ConsumerRecord<K, V>> recordsByPartition) throws InterruptedException {
+			final List<ConsumerRecord<K, V>> recordsByPartition, long highWaterMark) throws InterruptedException {
 		if (null == recordsByPartition || recordsByPartition.isEmpty())
 			return true;
 		try {
-			int saveNum = partitionData.putRecords(recordsByPartition);
+			int saveNum = partitionData.putRecords(recordsByPartition, highWaterMark);
 			logger.debug("[PartitionDataManager] the number of records is [{}], save successful records is [{}].",
 					recordsByPartition.size(), saveNum);
 			return true;

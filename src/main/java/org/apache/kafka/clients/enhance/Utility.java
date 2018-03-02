@@ -129,4 +129,12 @@ public final class Utility {
 			return localHost.getHostAddress();
 		}
 	}
+
+	public static long max(long... data) {
+		long max = 0;
+		for (long item : data) {
+			max = Math.max(item, max);
+		}
+		return max;
+	}
 }

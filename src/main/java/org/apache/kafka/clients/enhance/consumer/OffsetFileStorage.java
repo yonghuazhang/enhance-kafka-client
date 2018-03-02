@@ -58,19 +58,18 @@ public class OffsetFileStorage<K> extends AbstractOffsetStorage<K> {
 		}
 		if (null != fileContent && !fileContent.isEmpty()) {
 			Matcher offsetMatcher = OFFSET_FILE_STORE_PATTERN.matcher(fileContent);
-			synchronized (lock) {
-				while (offsetMatcher.find()) {
-					try {
-						String topicName = offsetMatcher.group("topic");
-						int partitionId = Integer.parseInt(offsetMatcher.group("partition"));
-						long offset = Long.parseLong(offsetMatcher.group("offset"));
-						commitedOffsetSnapshot
-								.put(new TopicPartition(topicName, partitionId), new OffsetAndMetadata(offset));
-					} catch (NumberFormatException ex) {
-						logger.warn("local offset format is wrong. the record is [{}]", offsetMatcher.group());
-					}
+			while (offsetMatcher.find()) {
+				try {
+					String topicName = offsetMatcher.group("topic");
+					int partitionId = Integer.parseInt(offsetMatcher.group("partition"));
+					long offset = Long.parseLong(offsetMatcher.group("offset"));
+					commitedOffsetSnapshot
+							.put(new TopicPartition(topicName, partitionId), new OffsetAndMetadata(offset));
+				} catch (NumberFormatException ex) {
+					logger.warn("local offset format is wrong. the record is [{}]", offsetMatcher.group());
 				}
 			}
+
 			return true;
 		}
 		return false;
@@ -94,12 +93,11 @@ public class OffsetFileStorage<K> extends AbstractOffsetStorage<K> {
 		try {
 			bf = new BufferedOutputStream(new FileOutputStream(offsetFilePath, true));
 			bf.write("topicName partitonId offset\n".getBytes(StandardCharsets.UTF_8));
-			synchronized (lock) {
-				for (TopicPartition tp : commitedOffsetSnapshot.keySet()) {
-					OffsetAndMetadata offsetMeta = commitedOffsetSnapshot.get(tp);
-					bf.write((tp.topic() + " " + tp.partition() + " " + offsetMeta.offset() + "\n")
-							.getBytes(StandardCharsets.UTF_8));
-				}
+
+			for (TopicPartition tp : commitedOffsetSnapshot.keySet()) {
+				OffsetAndMetadata offsetMeta = commitedOffsetSnapshot.get(tp);
+				bf.write((tp.topic() + " " + tp.partition() + " " + offsetMeta.offset() + "\n")
+						.getBytes(StandardCharsets.UTF_8));
 			}
 		} catch (Exception e) {
 			logger.warn("storeOffsetMeta error. du to ", e);

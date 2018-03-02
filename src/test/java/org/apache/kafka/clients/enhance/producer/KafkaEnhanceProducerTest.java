@@ -99,9 +99,9 @@ public class KafkaEnhanceProducerTest {
 
 
 
-        for (int i = 0; i < 100; i++) {
+        for (int i = 0; i < 1; i++) {
             message.setTags(Integer.toString(i));
-            producer.sendMessage(message);
+            producer.sendMessage(message).get();
         }
 
         /*producer.beginTransaction();

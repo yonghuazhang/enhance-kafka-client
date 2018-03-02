@@ -7,6 +7,7 @@ import org.apache.kafka.clients.enhance.consumer.listener.ConcurrentMessageHandl
 import org.apache.kafka.clients.enhance.consumer.listener.ConsumeStatus;
 import org.apache.kafka.common.TopicPartition;
 
+import javax.net.ssl.SSLEngineResult;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
@@ -145,6 +146,7 @@ public class ConcurrentConsumeTaskRequest<K> extends AbstractConsumeTaskRequest<
 				logger.warn("consuming handler return null status, status will be replaced by [CONSUME_SUCCESS].");
 				status = ConsumeStatus.CONSUME_SUCCESS;
 			}
+			return ConsumeTaskResponse.TASK_EXEC_SUCCESS;
 		} catch (Throwable t) {
 			if (t instanceof InterruptedException) {
 				logger.info("[ConcurrentConsumeTaskRequest] callback exec too long(>{}ms), interrupted the task.",
@@ -154,10 +156,14 @@ public class ConcurrentConsumeTaskRequest<K> extends AbstractConsumeTaskRequest<
 			}
 			return ConsumeTaskResponse.TASK_EXEC_FAILURE;
 		} finally {
-			processConsumeStatus(status);
+			try {
+				processConsumeStatus(status);
+			} catch (Exception e) {
+				logger.warn("processConsumeStatus exception, due to:", e);
+				this.updateTimestamp();
+				processConsumeStatus(status);
+			}
 		}
-
-		return ConsumeTaskResponse.TASK_EXEC_SUCCESS;
 	}
 
 	private void updateMessageAttrBeforeSendback(ExtMessage<K> msg, int delayedLevel) {

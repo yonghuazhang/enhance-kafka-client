@@ -11,13 +11,13 @@ import java.util.concurrent.atomic.AtomicBoolean;
 
 public abstract class ShutdownableThread extends KafkaThread {
 	private final static Logger logger = LoggerFactory.getLogger(ShutdownableThread.class);
-	private final boolean isInterruptible;
+	private final boolean canInterruptible;
 	private final AtomicBoolean isRunning = new AtomicBoolean(true);
 	private final CountDownLatch shutdownLatch = new CountDownLatch(1);
 
-	public ShutdownableThread(String name, boolean daemon, boolean isInterruptible) {
+	public ShutdownableThread(String name, boolean daemon, boolean canInterruptible) {
 		super(name, daemon);
-		this.isInterruptible = isInterruptible;
+		this.canInterruptible = canInterruptible;
 	}
 
 	public ShutdownableThread(String name, boolean daemon) {
@@ -28,9 +28,9 @@ public abstract class ShutdownableThread extends KafkaThread {
 		this(name, false, true);
 	}
 
-	public ShutdownableThread(String name, Runnable runnable, boolean daemon, boolean isInterruptible) {
+	public ShutdownableThread(String name, Runnable runnable, boolean daemon, boolean canInterruptible) {
 		super(name, runnable, daemon);
-		this.isInterruptible = isInterruptible;
+		this.canInterruptible = canInterruptible;
 	}
 
 	public ShutdownableThread(String name, Runnable runnable, boolean daemon) {
@@ -45,7 +45,7 @@ public abstract class ShutdownableThread extends KafkaThread {
 	public boolean initiateShutdown() {
 		if (isRunning.compareAndSet(true, false)) {
 			logger.info("Shutting down thread.");
-			if (isInterruptible) {
+			if (canInterruptible) {
 				interrupt();
 			}
 			return true;

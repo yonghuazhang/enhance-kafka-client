@@ -14,6 +14,8 @@ import java.util.*;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.locks.ReentrantLock;
 
+import static org.apache.kafka.clients.enhance.ExtMessageDef.INVALID_OFFSET_VALUE;
+
 class KafkaPollMessageService<K> extends ShutdownableThread {
 	private final static Logger logger = LoggerFactory.getLogger(KafkaPollMessageService.class);
 
@@ -71,10 +73,11 @@ class KafkaPollMessageService<K> extends ShutdownableThread {
 						logger.debug("KafkaPollMessageService retrieve no messages [{}] and records count {}.",
 								records.isEmpty(), records.count());
 						//filter messages
+						Map<TopicPartition, Long> highWaterMarks = new HashMap<>();
 						ConsumerRecords<K, ExtMessage<K>> filterMessages = filterMessage(records,
-								clientContext.messageFilter());
+								clientContext.messageFilter(), highWaterMarks);
 						Set<TopicPartition> needPausePartitions = partitionDataManager
-								.saveConsumerRecords(filterMessages);
+								.saveConsumerRecords(filterMessages, highWaterMarks);
 
 						Set<TopicPartition> pausedPartitions = safeConsumer.paused();
 						if (!pausedPartitions.isEmpty()) {
@@ -107,24 +110,27 @@ class KafkaPollMessageService<K> extends ShutdownableThread {
 	}
 
 	private ConsumerRecords<K, ExtMessage<K>> filterMessage(ConsumerRecords<K, ExtMessage<K>> records,
-			AbstractExtMessageFilter<K> filter) {
+			AbstractExtMessageFilter<K> filter, Map<TopicPartition, Long> highWaterMarks) {
 		if (null == records || records.isEmpty())
 			return records;
-		if (filter.isPermitAll())
+		if (filter.isPermitAll()) {
 			return records;
+		}
 
 		Map<TopicPartition, List<ConsumerRecord<K, ExtMessage<K>>>> filterRecords = new HashMap<>(records.count());
 		Set<TopicPartition> tps = records.partitions();
 		for (TopicPartition tp : tps) {
-			ArrayList<ConsumerRecord<K, ExtMessage<K>>> fitlerRecordsByPartition = new ArrayList<>();
+			ArrayList<ConsumerRecord<K, ExtMessage<K>>> filterRecordsByPartition = new ArrayList<>();
 			List<ConsumerRecord<K, ExtMessage<K>>> partitionRecords = records.records(tp);
-
+			long maxOffsetInPartition = INVALID_OFFSET_VALUE;
 			for (ConsumerRecord<K, ExtMessage<K>> partitionRecord : partitionRecords) {
+				maxOffsetInPartition = Math.max(maxOffsetInPartition,partitionRecord.offset());
 				if (filter.canDeliveryMessage(partitionRecord.value(), partitionRecord.headers())) {
-					fitlerRecordsByPartition.add(partitionRecord);
+					filterRecordsByPartition.add(partitionRecord);
 				}
 			}
-			filterRecords.put(tp, fitlerRecordsByPartition);
+			highWaterMarks.put(tp, maxOffsetInPartition);
+			filterRecords.put(tp, filterRecordsByPartition);
 		}
 
 		return new ConsumerRecords<>(filterRecords);

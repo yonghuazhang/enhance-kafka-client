@@ -1,9 +1,7 @@
 package org.apache.kafka.clients.enhance.consumer;
 
 import org.apache.kafka.clients.enhance.ExtMessage;
-import org.apache.kafka.clients.enhance.consumer.listener.ConsumeStatus;
-import org.apache.kafka.clients.enhance.consumer.listener.OrdinalConsumeContext;
-import org.apache.kafka.clients.enhance.consumer.listener.OrdinalMessageHandler;
+import org.apache.kafka.clients.enhance.consumer.listener.*;
 import org.junit.Before;
 import org.junit.Test;
 
@@ -29,8 +27,8 @@ public class KafkaPushConsumerTest {
 		props.put("isolation.level", "read_committed");
 
 		consumer = new KafkaPushConsumer<>(props, String.class);
-		consumer.consumeSetting().consumeBatchSize(10).consumeModel(ConsumeGroupModel.GROUP_CLUSTERING);
-		//.maxMessageDealTimeMs(10, TimeUnit.SECONDS);
+		consumer.consumeSetting().consumeBatchSize(10).consumeModel(ConsumeGroupModel.GROUP_CLUSTERING)
+				.maxMessageDealTimeMs(12000, TimeUnit.SECONDS);
 
 		final AtomicInteger total = new AtomicInteger(0);
 		final Map<String, Integer> calc = new HashMap<>();
@@ -57,8 +55,9 @@ public class KafkaPushConsumerTest {
 
             }
         });*/
+		final AtomicInteger totoal = new AtomicInteger(0);
 
-		consumer.registerHandler(new OrdinalMessageHandler<String>() {
+	/*	consumer.registerHandler(new OrdinalMessageHandler<String>() {
 			@Override
 			public ConsumeStatus consumeMessage(List<ExtMessage<String>> message, OrdinalConsumeContext consumeContext)
 					throws InterruptedException {
@@ -68,13 +67,35 @@ public class KafkaPushConsumerTest {
 				for (ExtMessage<String> msg : message) {
 					System.out.println("---->" + new String(msg.getMsgValue()));
 				}
+				if (total.getAndIncrement() < 2) {
+					TimeUnit.SECONDS.sleep(20);
+				}
+				System.out.println("===================> successfully, total = " + total.get());
 				return ConsumeStatus.CONSUME_SUCCESS;
+			}
+		});*/
+		consumer.registerHandler(new ConcurrentMessageHandler<String>() {
+			@Override
+			public ConsumeStatus consumeMessage(List<ExtMessage<String>> message, ConcurrentConsumeContext consumeContext)
+					throws InterruptedException {
+				System.out.println("ThreadId=" + Thread.currentThread().getId() + " message count=" + message.size()
+						+ " message retry time:" + (new Date()));
+
+				for (ExtMessage<String> msg : message) {
+					System.out.println("---->" + new String(msg.getMsgValue()) + " length = " + msg.getMsgValue().length);
+				}
+				/*if (total.getAndIncrement() < 2) {
+					TimeUnit.SECONDS.sleep(20);
+				}*/
+				consumeContext.setDelayLevelAtReconsume(1);
+				System.out.println("===================> successfully, total = " + total.get());
+				return ConsumeStatus.CONSUME_RETRY_LATER;
 			}
 		});
 
 
         /*consumer.registerHandler(new ConcurrentMessageHandler<String>() {
-            @Override
+			@Override
             public ConsumeStatus consumeMessage(List<ExtMessage<String>> message, ConcurrentConsumeContext consumeContext) throws InterruptedException {
 
                 *//*System.out.println("message num=" + message.size() + "\t --->" + message.get(0).getRetryCount());
@@ -104,7 +125,7 @@ public class KafkaPushConsumerTest {
             }
         });
 */
-		consumer.subscribe("test2", "^2.*");
+		consumer.subscribe("test2", "^[^9].*");
 
      /*   consumer.consumeSetting().messageFilter(new AbstractExtMessageFilter() {
             @Override
@@ -114,11 +135,11 @@ public class KafkaPushConsumerTest {
         });*/
 		consumer.start();
 		boolean seekOk = false;
-		TimeUnit.SECONDS.sleep(5);
+		TimeUnit.SECONDS.sleep(50000);
 		//consumer.suspend();
-		while (true) {
+		/*while (true) {
 			//System.out.println("total====>\t" + total.get());
-         /*   if (!seekOk) {
+         *//*   if (!seekOk) {
                 consumer.addConsumeHook(new ConsumeMessageHook<String>() {
                     @Override
                     public ConsumerRecords<String, ExtMessage<String>> onConsume(ConsumerRecords<String, ExtMessage<String>> records) {
@@ -142,25 +163,25 @@ public class KafkaPushConsumerTest {
                     }
                 });
                 seekOk = true;
-            }*/
+            }*//*
 			//TimeUnit.SECONDS.sleep(120);
 			//consumer.resume();
 			for (int i = 0; i < 10; i++) {
-               /* if (i == 0) {
+               *//* if (i == 0) {
                     consumer.seekToEnd();
                 } else if (i == 3 && !seekOk) {
                     consumer.seek(new TopicPartition("test", 0), 11318757);
                     seekOk = true;
                 } else if (i == 5) {
                     //consumer.seekToTime("2018-02-08T12:00:00.000");
-                }*/
+                }*//*
 				if (!calc.containsKey(String.valueOf(i))) {
 					//System.out.println("lost ====> " + i);
 				} else if (calc.get(String.valueOf(i)) > 1) {
 					//System.out.println("replicated ====> " + i + " times=" + calc.get(String.valueOf(i)));
 				}
 			}
-		}
+		}*/
 
 	}
 

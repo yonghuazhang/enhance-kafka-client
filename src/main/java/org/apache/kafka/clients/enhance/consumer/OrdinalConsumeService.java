@@ -11,6 +11,8 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.Future;
+import java.util.concurrent.TimeUnit;
 
 public class OrdinalConsumeService<K> extends AbstractConsumeService<K> {
 	private final ConcurrentHashMap<TopicPartition, OrdinalConsumeTaskRequest<K>> ordinalTasks = new ConcurrentHashMap<>();
@@ -34,7 +36,7 @@ public class OrdinalConsumeService<K> extends AbstractConsumeService<K> {
 		@Override
 		public void doWork() {
 			while (isRunning) {
-				Set<TopicPartition> assignedTopicPartitions = safeConsumer.assignment();
+				final Set<TopicPartition> assignedTopicPartitions = partitionDataManager.getAssignedPartition();
 				if (null != assignedTopicPartitions && !assignedTopicPartitions.isEmpty()) {
 					for (TopicPartition topicPartition : assignedTopicPartitions) {
 						OrdinalConsumeTaskRequest<K> oldTask = ordinalTasks.get(topicPartition);
@@ -57,6 +59,23 @@ public class OrdinalConsumeService<K> extends AbstractConsumeService<K> {
 							}
 						} else {
 							logger.debug("[OrdinalConsumeService] task was executing now." + oldTask);
+							Future<?> responseFuture = oldTask.taskResponseFuture;
+							if (responseFuture != null) {
+								if (oldTask.getDelay(TimeUnit.MILLISECONDS) > clientContext.maxMessageDealTimeMs()
+										&& !responseFuture.isDone() && !responseFuture.isCancelled()) {
+									oldTask.taskResponseFuture.cancel(true);
+								} else if (responseFuture.isDone()) {
+									try {
+										if (responseFuture.get() == ConsumeTaskResponse.TASK_EXEC_SUCCESS) {
+											ordinalTasks.remove(oldTask);
+										}
+									} catch (Exception e) {
+										logger.debug(
+												"[OrdinalConsumeService] task has been cancelled for too long running and resubmitted the job, ignore the exception.");
+									}
+								}
+							}
+							Utility.sleep(clientContext.pollMessageAwaitTimeoutMs());
 						}
 					}
 

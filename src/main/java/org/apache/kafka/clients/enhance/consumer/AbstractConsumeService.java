@@ -168,14 +168,17 @@ public abstract class AbstractConsumeService<K> implements ConsumeService<K> {
 
 	@Override
 	public boolean sendMessageBack(String topic, ExtMessage<K> msg, int delayLevel) {
-		if (null == topic || null == msg)
+		if (null == topic || null == msg) {
+			logger.warn("sendMessageBack error. due to topic[{}] is null or msg[{}] is null.", topic, msg);
 			return false;
+		}
 		ProducerRecord<K, ExtMessage<K>> record = null;
 		if (1 <= delayLevel && MAX_DELAY_TIME_LEVEL >= delayLevel) {
 			String delayedTopic = getDelayedTopicName(delayLevel);
 			msg.addProperty(PROPERTY_DELAY_RESEND_TOPIC, topic);
 			ExtMessageUtils.setDelayedLevel(msg, delayLevel);
 			record = new ProducerRecord<>(delayedTopic, msg.getMsgKey(), msg);
+			//record = new ProducerRecord<>(clientContext.retryTopicName(), msg.getMsgKey(), msg);
 			record.headers().add(PROPERTY_DELAY_RESEND_TOPIC, topic.getBytes(ExtMessageDef.STRING_ENCODE));
 		} else {
 			record = new ProducerRecord<>(topic, msg.getMsgKey(), msg);
@@ -357,6 +360,7 @@ public abstract class AbstractConsumeService<K> implements ConsumeService<K> {
 	public Future<ConsumeTaskResponse> dispatchTaskAtOnce(AbstractConsumeTaskRequest<K> requestTask) {
 		Future<ConsumeTaskResponse> responseFuture = null;
 		if (null != requestTask) {
+			requestTask.updateTimestamp();
 			responseFuture = execTaskService.submit(requestTask);
 			requestTask.setTaskResponseFuture(responseFuture);
 		}

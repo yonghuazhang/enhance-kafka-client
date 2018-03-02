@@ -1,6 +1,7 @@
 package org.apache.kafka.clients.enhance.consumer;
 
 import org.apache.kafka.clients.consumer.ConsumerRecord;
+import org.apache.kafka.clients.enhance.Utility;
 import org.apache.kafka.clients.enhance.exception.PartitionDataFullException;
 import org.apache.kafka.common.TopicPartition;
 import org.apache.kafka.common.utils.Time;
@@ -29,7 +30,8 @@ public class PartitionData<K, V> {
 	private final AtomicInteger slidingWindowSize = new AtomicInteger(0);
 	private final AtomicLong takeCursor = new AtomicLong(INVALID_OFFSET_VALUE);
 	private final AtomicLong accTakeMessageNum = new AtomicLong(0L);
-	private final AtomicLong pMaxOffset = new AtomicLong(INVALID_OFFSET_VALUE);
+	private final AtomicLong highWaterMarkInWindow = new AtomicLong(INVALID_OFFSET_VALUE);
+	private final AtomicLong pullRecordHighWaterMark = new AtomicLong(INVALID_OFFSET_VALUE);
 	private final AtomicLong lastAckOffset = new AtomicLong(INVALID_OFFSET_VALUE);
 
 	private final Time kafkaTime = Time.SYSTEM;
@@ -68,32 +70,36 @@ public class PartitionData<K, V> {
 		return (slidingWindowSize.get() + estimateNum) > PartitionDataManager.MAX_SIZE_SLIDING_WINDOWS;
 	}
 
-	public int putRecord(ConsumerRecord<K, V> record) throws InterruptedException, PartitionDataFullException {
+	public int putRecord(ConsumerRecord<K, V> record, final long pullHighWaterMark)
+			throws InterruptedException, PartitionDataFullException {
 		int recCnt = 0;
-		if (isPartitionRecord(record)) {
-			wLock.lockInterruptibly();
-			try {
-				if (isWinFull(1)) {
-					boolean awaitOk = winFullLock.await(SLIDING_WINDOWS_FULL_AWAIT_TIMOUT_MS, TimeUnit.MILLISECONDS);
-					if (!awaitOk) {
-						throw new PartitionDataFullException("put message await lock timeout.");
-					}
+		if (null == record)
+			return recCnt;
+		wLock.lockInterruptibly();
+		try {
+			if (isWinFull(1)) {
+				boolean awaitOk = winFullLock.await(SLIDING_WINDOWS_FULL_AWAIT_TIMOUT_MS, TimeUnit.MILLISECONDS);
+				if (!awaitOk) {
+					throw new PartitionDataFullException("put message await lock timeout.");
 				}
-				ConsumerRecord<K, V> oldRec = slidingWindow.put(record.offset(), record);
-				if (null == oldRec) {
-					recCnt++;
-					slidingWindowSize.getAndIncrement();
-				}
-			} finally {
-				lastPutMessageTimestamp = kafkaTime.milliseconds();
-				pMaxOffset.set(slidingWindow.lastKey().longValue());
-				wLock.unlock();
 			}
+			ConsumerRecord<K, V> oldRec = slidingWindow.put(record.offset(), record);
+			if (null == oldRec) {
+				recCnt++;
+				slidingWindowSize.getAndIncrement();
+			}
+		} finally {
+			highWaterMarkInWindow.set(slidingWindow.lastKey().longValue());
+			long maxOffset = Utility.max(highWaterMarkInWindow.get(), pullRecordHighWaterMark.get(), pullHighWaterMark);
+			pullRecordHighWaterMark.set(maxOffset);
+			lastPutMessageTimestamp = kafkaTime.milliseconds();
+			wLock.unlock();
 		}
 		return recCnt;
 	}
 
-	public int putRecords(List<ConsumerRecord<K, V>> records) throws InterruptedException, PartitionDataFullException {
+	public int putRecords(List<ConsumerRecord<K, V>> records, final long pullHighWaterMark)
+			throws InterruptedException, PartitionDataFullException {
 		int recCnt = 0;
 		if (null == records || records.isEmpty())
 			return recCnt;
@@ -102,15 +108,15 @@ public class PartitionData<K, V> {
 			for (int fromIdx = 0; fromIdx < records.size(); fromIdx++) {
 				ConsumerRecord<K, V> record = records.get(fromIdx);
 				if (isWinFull(1)) {
-					boolean awaitOk = winFullLock.await(SLIDING_WINDOWS_FULL_AWAIT_TIMOUT_MS, TimeUnit.MILLISECONDS);
-					if (!awaitOk) {
+					boolean waitLockOk = winFullLock.await(SLIDING_WINDOWS_FULL_AWAIT_TIMOUT_MS, TimeUnit.MILLISECONDS);
+					if (!waitLockOk) {
 						logger.debug(
 								"[PartitionData-putRecords] sliding window is full and wait lock timeout, current record offset is [{}].",
 								record.offset());
 						throw new PartitionDataFullException("put message await lock timeout.", fromIdx);
 					}
 				}
-				if (record.offset() > pMaxOffset.get()) {
+				if (record.offset() > highWaterMarkInWindow.get()) {
 					ConsumerRecord<K, V> oldRec = slidingWindow.put(record.offset(), record);
 					if (null == oldRec) {
 						recCnt++;
@@ -120,10 +126,15 @@ public class PartitionData<K, V> {
 			slidingWindowSize.addAndGet(recCnt);
 			return recCnt;
 		} finally {
+			long maxOffsetInWindow = slidingWindow.lastKey().longValue();
+			if (highWaterMarkInWindow.get() < maxOffsetInWindow) {
+				highWaterMarkInWindow.set(maxOffsetInWindow);
+			}
+			pullRecordHighWaterMark
+					.set(Utility.max(highWaterMarkInWindow.get(), pullRecordHighWaterMark.get(), pullHighWaterMark));
+			/*logger.debug("[putRecords] tp = " + tp + "\t takeCursor=" + takeCursor.get() + "\t highWaterMarkInWindow = " + highWaterMarkInWindow.get()
+					+ "\t lastAckOffset=" + lastAckOffset.get() + "\t winSize=" + slidingWindowSize.get());*/
 			lastPutMessageTimestamp = kafkaTime.milliseconds();
-			pMaxOffset.set(slidingWindow.lastKey().longValue());
-			/*logger.debug("[putRecords] tp = " + tp + "\t takeCursor=" + takeCursor.get() + "\t pMaxOffset = " + pMaxOffset.get()
-                    + "\t lastAckOffset=" + lastAckOffset.get() + "\t winSize=" + slidingWindowSize.get());*/
 			wLock.unlock();
 		}
 	}
@@ -143,7 +154,7 @@ public class PartitionData<K, V> {
 				winFullLock.signalAll();
 			}
 			if (slidingWindow.isEmpty()) {
-				long partitionMaxPutOffset = pMaxOffset.get();
+				long partitionMaxPutOffset = pullRecordHighWaterMark.get();
 				long tmpMaxOffset = (partitionMaxPutOffset > offset) ? partitionMaxPutOffset : offset;
 				if (tmpMaxOffset > lastAckOffset.get()) {
 					lastAckOffset.set(tmpMaxOffset);
@@ -176,7 +187,7 @@ public class PartitionData<K, V> {
 			}
 			if (slidingWindow.isEmpty()) {
 				long tmpMaxOffset = maxOffset(offsets);
-				long partitionMaxPutOffset = pMaxOffset.get();
+				long partitionMaxPutOffset = pullRecordHighWaterMark.get();
 				tmpMaxOffset = (partitionMaxPutOffset > tmpMaxOffset) ? partitionMaxPutOffset : tmpMaxOffset;
 				if (tmpMaxOffset > lastAckOffset.get()) {
 					lastAckOffset.set(tmpMaxOffset);
@@ -187,9 +198,9 @@ public class PartitionData<K, V> {
 				lastAckOffset.set(slidingWindow.firstKey().longValue() - 1L);
 			}
 			logger.debug(
-					"[removeRecord] tp = " + tp + "\t takeCursor=" + takeCursor.get() + "\t pMaxOffset = " + pMaxOffset
-							.get() + "\t lastAckOffset=" + lastAckOffset.get() + "\t winSize=" + slidingWindowSize
-							.get());
+					"[removeRecord] tp = " + tp + "\t takeCursor=" + takeCursor.get() + "\t highWaterMarkInWindow = "
+							+ highWaterMarkInWindow.get() + "\t lastAckOffset=" + lastAckOffset.get() + "\t winSize="
+							+ slidingWindowSize.get());
 
 			lastConsumedTimestamp = kafkaTime.milliseconds();
 			wLock.unlock();
@@ -217,7 +228,7 @@ public class PartitionData<K, V> {
 			}
 			int num = 0;
 			long cur = takeCursor.get();
-			for (; cur <= pMaxOffset.get() && num < batchSize; num++, cur++) {
+			for (; cur <= highWaterMarkInWindow.get() && num < batchSize; num++, cur++) {
 				rLock.lockInterruptibly();
 				try {
 					if (slidingWindow.containsKey(cur)) {
@@ -232,9 +243,9 @@ public class PartitionData<K, V> {
 			}
 
 			takeCursor.set(cur);
-			logger.debug(
-					"[PartitionData-takeRecords] tp = " + tp + "\t takeCursor=" + takeCursor.get() + "\t pMaxOffset = "
-							+ pMaxOffset.get() + "\t lastAckOffset=" + lastAckOffset.get());
+			logger.debug("[PartitionData-takeRecords] tp = " + tp + "\t takeCursor=" + takeCursor.get()
+					+ "\t highWaterMarkInWindow = " + highWaterMarkInWindow.get() + "\t lastAckOffset=" + lastAckOffset
+					.get());
 			accTakeMessageNum.addAndGet(num);
 			return results;
 		}
@@ -256,8 +267,8 @@ public class PartitionData<K, V> {
 		}
 	}
 
-	public long getMaxOffset() {
-		return pMaxOffset.get();
+	public long highWaterMarkOffset() {
+		return highWaterMarkInWindow.get();
 	}
 
 	public long getOffsetSpan() throws InterruptedException {
@@ -280,7 +291,7 @@ public class PartitionData<K, V> {
 	}
 
 	private boolean hasUndispatchedMessage() throws InterruptedException {
-		return (slidingWindowSize.get() > 0) && takeCursor.get() <= pMaxOffset.get();
+		return (slidingWindowSize.get() > 0) && takeCursor.get() <= highWaterMarkInWindow.get();
 	}
 
 	private boolean isPartitionRecord(ConsumerRecord<K, V> record) {
@@ -296,7 +307,7 @@ public class PartitionData<K, V> {
 			accTakeMessageNum.set(0L);
 
 			takeCursor.set(INVALID_OFFSET_VALUE);
-			pMaxOffset.set(INVALID_OFFSET_VALUE);
+			highWaterMarkInWindow.set(INVALID_OFFSET_VALUE);
 			lastAckOffset.set(INVALID_OFFSET_VALUE);
 		} finally {
 			wLock.unlock();

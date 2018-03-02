@@ -23,7 +23,7 @@ public abstract class AbstractConsumeTaskRequest<K> implements Callable<ConsumeT
 	protected final List<ExtMessage<K>> messages;
 	protected final TopicPartition topicPartition;
 	protected final AbstractConsumeService<K> consumeService;
-	protected final long taskCreatedTime = Time.SYSTEM.milliseconds();
+	protected volatile long taskCreatedTime = Time.SYSTEM.milliseconds();
 	protected volatile Future<ConsumeTaskResponse> taskResponseFuture;
 
 	public AbstractConsumeTaskRequest(AbstractConsumeService<K> service, PartitionDataManager manager,
@@ -39,6 +39,10 @@ public abstract class AbstractConsumeTaskRequest<K> implements Callable<ConsumeT
 
 	public long getTaskCreatedTime() {
 		return taskCreatedTime;
+	}
+
+	public void updateTimestamp() {
+		this.taskCreatedTime = Time.SYSTEM.milliseconds();
 	}
 
 	@Override
